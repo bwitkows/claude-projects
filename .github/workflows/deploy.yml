@@ -19,33 +19,162 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: vehicle-driving-simulator
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need full history + tags so we can check each rung's commit out
+          # into a worktree and build it as it existed at that point.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: vehicle-driving-simulator/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Build each rung from its tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p staging
 
-      - name: Build (with Pages base path)
-        # Pages serves project sites at https://<user>.github.io/<repo>/, so
-        # vite needs `--base=/<repo>/` to rewrite asset URLs.
-        run: npm run build -- --base=/claude-projects/
+          tags=$(git tag --list 'r*-complete' | sort -V)
+          if [[ -z "$tags" ]]; then
+            echo "No r*-complete tags found; nothing to build." >&2
+            exit 1
+          fi
+
+          for tag in $tags; do
+            rung="${tag%-complete}"
+            echo "::group::Building $rung from $tag"
+            wt="$RUNNER_TEMP/wt-$rung"
+            git worktree add --detach "$wt" "$tag"
+            (
+              cd "$wt/vehicle-driving-simulator"
+              npm ci
+              npm run build -- --base="/claude-projects/$rung/"
+            )
+            mkdir -p "staging/$rung"
+            cp -a "$wt/vehicle-driving-simulator/dist/." "staging/$rung/"
+            git worktree remove "$wt" --force
+            echo "::endgroup::"
+          done
+
+      - name: Generate landing page
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Header
+          cat > staging/index.html <<'HTML_HEAD'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Vehicle Driving Simulator — rungs</title>
+              <style>
+                :root { color-scheme: light; }
+                body {
+                  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+                  max-width: 760px;
+                  margin: 2.5rem auto;
+                  padding: 0 1.25rem;
+                  line-height: 1.5;
+                  color: #1f2328;
+                  background: #fff;
+                }
+                h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+                .lede { color: #57606a; margin-top: 0; }
+                ul.rungs { list-style: none; padding: 0; margin: 1.75rem 0 0; }
+                ul.rungs li {
+                  padding: 0.85rem 1rem;
+                  border: 1px solid #d0d7de;
+                  border-radius: 6px;
+                  margin: 0.5rem 0;
+                  transition: border-color 0.1s, background 0.1s;
+                }
+                ul.rungs li:hover { border-color: #0969da; background: #f6f8fa; }
+                ul.rungs a {
+                  font-weight: 600;
+                  text-decoration: none;
+                  color: #0969da;
+                  font-size: 1.05rem;
+                }
+                ul.rungs small {
+                  display: block;
+                  color: #57606a;
+                  margin-top: 0.25rem;
+                  font-size: 0.875rem;
+                }
+                footer {
+                  color: #6e7781;
+                  font-size: 0.85rem;
+                  margin-top: 2.5rem;
+                  padding-top: 1rem;
+                  border-top: 1px solid #eaeef2;
+                }
+                code {
+                  background: #f6f8fa;
+                  padding: 0.1rem 0.35rem;
+                  border-radius: 3px;
+                  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                  font-size: 0.9em;
+                }
+              </style>
+            </head>
+            <body>
+              <main>
+                <h1>Vehicle Driving Simulator</h1>
+                <p class="lede">
+                  A 3D vehicle simulator that doubles as an AI coding-tool benchmark.
+                  Each rung of the fidelity ladder is built from its tagged commit and
+                  hosted separately so you can step through the ladder visually.
+                </p>
+                <ul class="rungs">
+          HTML_HEAD
+
+          for d in staging/r*/; do
+            rung=$(basename "$d")
+            tag="${rung}-complete"
+            # Pull the change name from the tag's annotated subject
+            # (we write subjects as "Rn complete: <change> + ...").
+            subject=$(git tag -l --format='%(contents:subject)' "$tag")
+            change=$(printf '%s' "$subject" \
+              | sed -E 's/^[Rr][0-9]+ complete: //' \
+              | awk -F ' \\+ ' '{print $1}')
+            label="${rung^^} — ${change:-no description}"
+            cat >> staging/index.html <<HTML_LI
+                  <li>
+                    <a href="${rung}/">${label}</a>
+                    <small>built from <code>${tag}</code></small>
+                  </li>
+          HTML_LI
+          done
+
+          cat >> staging/index.html <<'HTML_TAIL'
+                </ul>
+                <footer>
+                  Source &amp;
+                  <a href="https://github.com/bwitkows/claude-projects">change history</a>
+                  on GitHub. Each rung's <code>evals/</code> directory under that tag
+                  records how the AI tool that built it performed.
+                </footer>
+              </main>
+            </body>
+          </html>
+          HTML_TAIL
+
+          # Prevent Jekyll from touching anything (e.g., paths with underscores).
+          touch staging/.nojekyll
+
+          echo "--- staging tree:"
+          find staging -maxdepth 2 -type d | sort
 
       - uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # path is resolved from GITHUB_WORKSPACE, not from working-directory.
-          path: vehicle-driving-simulator/dist
+          path: staging
 
   deploy:
     needs: build
