@@ -58,6 +58,18 @@ jobs:
             echo "::endgroup::"
           done
 
+          # Also build main's HEAD as /latest/ so post-rung UI improvements
+          # are visible without re-tagging the immutable rung snapshots.
+          echo "::group::Building latest from main HEAD"
+          (
+            cd vehicle-driving-simulator
+            npm ci
+            npm run build -- --base=/claude-projects/latest/
+          )
+          mkdir -p staging/latest
+          cp -a vehicle-driving-simulator/dist/. staging/latest/
+          echo "::endgroup::"
+
       - name: Generate landing page
         shell: bash
         run: |
@@ -178,6 +190,17 @@ jobs:
                   </li>
           HTML_LI
           done
+
+          # /latest/ entry — main HEAD, post-rung work-in-progress UI / fixes.
+          if [[ -d staging/latest ]]; then
+            short_sha=$(git rev-parse --short HEAD)
+            cat >> staging/index.html <<HTML_LATEST
+                  <li>
+                    <a href="latest/">LATEST — main HEAD</a>
+                    <small>built from <code>${short_sha}</code> · post-rung work-in-progress (not part of the eval ladder)</small>
+                  </li>
+          HTML_LATEST
+          fi
 
           cat >> staging/index.html <<'HTML_TAIL'
                 </ul>
