@@ -18,7 +18,14 @@ export {
   KinematicVehicle,
   type KinematicVehicleParams,
 } from './kinematic.js';
-export { DEFAULT_C_ALPHA_PER_N, LinearTireModel, type TireModel } from './tire.js';
+export {
+  DEFAULT_C_ALPHA_PER_N,
+  DEFAULT_PACEJKA_PARAMS,
+  LinearTireModel,
+  type PacejkaParams,
+  PacejkaTireModel,
+  type TireModel,
+} from './tire.js';
 export {
   type BicycleVehicleState,
   type FourWheelVehicleState,

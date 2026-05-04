@@ -1,7 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { ControlState } from '../input/types.js';
 import type { Heightmap } from '../terrain/index.js';
-import { DEFAULT_C_ALPHA_PER_N, LinearTireModel, type TireModel } from './tire.js';
+import { DEFAULT_PACEJKA_PARAMS, PacejkaTireModel, type TireModel } from './tire.js';
 import {
   type FourWheelVehicleState,
   NEUTRAL_FOUR_WHEEL_STATE,
@@ -33,8 +33,9 @@ export interface FourWheelVehicleParams {
   readonly rideHeight: number; // body Y offset above terrain (m)
   readonly wheelMaxRayLen: number; // raycast distance allowance below hardpoint (m)
   readonly wheelRayHover: number; // ray origin offset above hardpoint (m)
-  // R5: tire force model. Default is LinearTireModel(DEFAULT_C_ALPHA_PER_N).
-  // R6 will swap a saturating Pacejka model in via the same interface.
+  // R5/R6: tire force model. Default is PacejkaTireModel(DEFAULT_PACEJKA_PARAMS)
+  // — the saturating Magic Formula. R5's LinearTireModel remains exported and
+  // can be passed explicitly for the unbounded linear regime.
   readonly tireModel: TireModel;
 }
 
@@ -56,7 +57,7 @@ export const DEFAULT_FOUR_WHEEL_PARAMS: FourWheelVehicleParams = Object.freeze({
   rideHeight: 0.5,
   wheelMaxRayLen: 1.5,
   wheelRayHover: 1.0,
-  tireModel: new LinearTireModel(DEFAULT_C_ALPHA_PER_N),
+  tireModel: new PacejkaTireModel(DEFAULT_PACEJKA_PARAMS),
 });
 
 export interface FourWheelDeps {
