@@ -1,6 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { ControlState } from '../input/types.js';
 import type { Heightmap } from '../terrain/index.js';
+import { DEFAULT_C_ALPHA_PER_N, LinearTireModel, type TireModel } from './tire.js';
 import {
   type FourWheelVehicleState,
   NEUTRAL_FOUR_WHEEL_STATE,
@@ -19,6 +20,9 @@ export interface FourWheelVehicleParams {
   readonly trackWidth: number;
   readonly chassisHeight: number;
   readonly hCog: number; // CoG height above ground (m), used by load transfer
+  // R5 NOTE: `cAlpha` (per-axle stiffness, N/rad) is no longer used by the
+  // tire force calculation — `tireModel` owns that. It is kept on the params
+  // shape for backward construction but is informational only.
   readonly cAlpha: number;
   readonly fDrive: number;
   readonly fBrake: number;
@@ -29,6 +33,9 @@ export interface FourWheelVehicleParams {
   readonly rideHeight: number; // body Y offset above terrain (m)
   readonly wheelMaxRayLen: number; // raycast distance allowance below hardpoint (m)
   readonly wheelRayHover: number; // ray origin offset above hardpoint (m)
+  // R5: tire force model. Default is LinearTireModel(DEFAULT_C_ALPHA_PER_N).
+  // R6 will swap a saturating Pacejka model in via the same interface.
+  readonly tireModel: TireModel;
 }
 
 export const DEFAULT_FOUR_WHEEL_PARAMS: FourWheelVehicleParams = Object.freeze({
@@ -49,6 +56,7 @@ export const DEFAULT_FOUR_WHEEL_PARAMS: FourWheelVehicleParams = Object.freeze({
   rideHeight: 0.5,
   wheelMaxRayLen: 1.5,
   wheelRayHover: 1.0,
+  tireModel: new LinearTireModel(DEFAULT_C_ALPHA_PER_N),
 });
 
 export interface FourWheelDeps {
@@ -194,10 +202,13 @@ export class FourWheelVehicle implements VehicleModel {
     const vx = lin.x * s + lin.z * c; // forward (+Z body)
     const vy = lin.x * c - lin.z * s; // right (+X body)
     const yawRate = -ang.y; // see quaternionFromHeading sign convention
-    // Slip angles, computed using current body-frame velocities.
-    const vxSafe = Math.max(vx, this.p.vMinSlip);
-    const slipF = Math.atan2(vy + this.p.a * yawRate, vxSafe);
-    const slipR = Math.atan2(vy - this.p.b * yawRate, vxSafe);
+    // R5: state.slipF / state.slipR are per-axle averages of per-wheel slips
+    // stored from the most recent step. They include the steering angle δ for
+    // the front axle, matching R2's BicycleVehicle semantics. Before the
+    // first step, they default to the neutral state (0).
+    const w = this.wheelStates;
+    const slipF = (w.fl.slip + w.fr.slip) / 2;
+    const slipR = (w.rl.slip + w.rr.slip) / 2;
     const speed = Math.sqrt(vx * vx + vy * vy);
     return {
       x: t.x,
@@ -271,13 +282,26 @@ export class FourWheelVehicle implements VehicleModel {
     const steer = clamp(control.steer, -1, 1);
     const delta = steer * this.p.deltaMax;
 
-    // Slip angles → lateral forces (R2 bicycle math, applied at axle midpoints).
-    const vxSafe = Math.max(vx, this.p.vMinSlip);
-    const slipF = Math.atan2(vy + this.p.a * yawRate, vxSafe) - delta;
-    const slipR = Math.atan2(vy - this.p.b * yawRate, vxSafe);
-    const fyf = -this.p.cAlpha * slipF;
-    const fyr = -this.p.cAlpha * slipR;
+    // R5: per-wheel slip angles. The body-frame velocity at each wheel is
+    // `(vy + r·rz, _, vx − r·rx)`, derived from rigid-body kinematics in the
+    // body frame. Front wheels' `δ_wheel = δ`; rear wheels' is 0. The
+    // longitudinal denominator is clamped to `vMinSlip` so slips stay
+    // finite at standstill.
+    const halfTrack = this.p.trackWidth / 2;
+    const wheelSlip = (rx: number, rz: number, isFront: boolean): number => {
+      const vLat = vy + yawRate * rz;
+      const vLong = Math.max(vx - yawRate * rx, this.p.vMinSlip);
+      const dWheel = isFront ? delta : 0;
+      return Math.atan2(vLat, vLong) - dWheel;
+    };
+    const slipFL = wheelSlip(-halfTrack, +this.p.a, true);
+    const slipFR = wheelSlip(+halfTrack, +this.p.a, true);
+    const slipRL = wheelSlip(-halfTrack, -this.p.b, false);
+    const slipRR = wheelSlip(+halfTrack, -this.p.b, false);
     const cosD = Math.cos(delta);
+    // Per-axle averages preserved for telemetry / R2 backward comparability.
+    const slipF = (slipFL + slipFR) / 2;
+    const slipR = (slipRL + slipRR) / 2;
 
     // Longitudinal force on the body (used for load transfer estimate).
     const sgnVx = Math.sign(vx);
@@ -288,16 +312,25 @@ export class FourWheelVehicle implements VehicleModel {
 
     // Body-frame accelerations at the CoG.
     const aX = fxNet / this.p.m;
-    // Lateral acceleration: lateral force / mass minus centripetal coupling.
-    // For load transfer we use the body-frame net lateral accel.
-    const aY = (fyf * cosD + fyr) / this.p.m - vx * yawRate;
+    // Lateral acceleration estimate for load transfer. R5 has a chicken-and-
+    // egg problem: F_z depends on a_y, a_y depends on F_y, F_y depends on
+    // F_z. We break the loop by estimating F_y here using the static F_z
+    // distribution (m·g·b/(2L) front, m·g·a/(2L) rear) and the per-axle
+    // average slip. The exact per-wheel forces (computed below using actual
+    // F_z) differ from this estimate by an amount proportional to the
+    // lateral-load-transfer-induced asymmetry, which is small at the slips
+    // R5 operates in.
+    const fzAxleStaticFront = (this.p.m * 9.81 * this.p.b) / (this.p.a + this.p.b);
+    const fzAxleStaticRear = (this.p.m * 9.81 * this.p.a) / (this.p.a + this.p.b);
+    const fyfEstimate = this.p.tireModel.lateralForce(slipF, fzAxleStaticFront, 'front');
+    const fyrEstimate = this.p.tireModel.lateralForce(slipR, fzAxleStaticRear, 'rear');
+    const aY = (fyfEstimate * cosD + fyrEstimate) / this.p.m - vx * yawRate;
 
     // Quasi-static load transfer.
     const L = this.p.a + this.p.b;
     const W = this.p.trackWidth;
-    const g = 9.81;
-    const fzStaticFront = (this.p.m * g * this.p.b) / L;
-    const fzStaticRear = (this.p.m * g * this.p.a) / L;
+    const fzStaticFront = fzAxleStaticFront;
+    const fzStaticRear = fzAxleStaticRear;
     const dFzLong = (this.p.m * aX * this.p.hCog) / L;
     const dFzLat = (this.p.m * aY * this.p.hCog) / W;
 
@@ -314,10 +347,10 @@ export class FourWheelVehicle implements VehicleModel {
     fzRR = fzPair(fzRR, wheels.rr.contact);
 
     this.wheelStates = {
-      fl: { ...wheels.fl, fz: fzFL },
-      fr: { ...wheels.fr, fz: fzFR },
-      rl: { ...wheels.rl, fz: fzRL },
-      rr: { ...wheels.rr, fz: fzRR },
+      fl: { ...wheels.fl, fz: fzFL, slip: slipFL },
+      fr: { ...wheels.fr, fz: fzFR, slip: slipFR },
+      rl: { ...wheels.rl, fz: fzRL, slip: slipRL },
+      rr: { ...wheels.rr, fz: fzRR, slip: slipRR },
     };
 
     // 5. Force application.
@@ -357,24 +390,35 @@ export class FourWheelVehicle implements VehicleModel {
       this.body.addForce(dragWorld, true);
     }
 
-    // Lateral force at axle midpoints (front and rear). World point: body
-    // CoG + rotated body offset (0, -chassisHeight/2, ±a or -b). Note the
-    // body offset y matches the wheel hardpoints' y so the moment arm is
-    // consistent with R5's per-wheel future refinement.
-    if (wheels.fl.contact || wheels.fr.contact) {
-      const frontMidBody = { x: 0, y: -this.p.chassisHeight / 2, z: +this.p.a };
-      const fmw = rotateBodyToWorld(frontMidBody.x, frontMidBody.y, frontMidBody.z, heading);
-      const fmWorld = { x: t.x + fmw.x, y: newY + fmw.y, z: t.z + fmw.z };
-      const fyfWorld = rotateBodyToWorld(fyf * cosD, 0, 0, heading);
-      this.body.addForceAtPoint(fyfWorld, fmWorld, true);
-    }
-    if (wheels.rl.contact || wheels.rr.contact) {
-      const rearMidBody = { x: 0, y: -this.p.chassisHeight / 2, z: -this.p.b };
-      const rmw = rotateBodyToWorld(rearMidBody.x, rearMidBody.y, rearMidBody.z, heading);
-      const rmWorld = { x: t.x + rmw.x, y: newY + rmw.y, z: t.z + rmw.z };
-      const fyrWorld = rotateBodyToWorld(fyr, 0, 0, heading);
-      this.body.addForceAtPoint(fyrWorld, rmWorld, true);
-    }
+    // R5: per-wheel lateral force via the tire model, applied at each wheel's
+    // world contact point. For front wheels the tire's lateral direction is
+    // body +X rotated by δ around +Y, giving a body-frame force vector
+    // `(F_y · cos δ, 0, −F_y · sin δ)`. Rear wheels' δ is 0, so the force is
+    // simply along body +X.
+    //
+    // The tireModel is invoked four times per step (once per wheel) — spec
+    // scenario "TireModel SHALL be invoked exactly four times per step". For
+    // wheels with no contact, fz=0 and the linear law returns 0; we still
+    // call the model to honor the spec's call count.
+    const fyFL = this.p.tireModel.lateralForce(slipFL, fzFL, 'front');
+    const fyFR = this.p.tireModel.lateralForce(slipFR, fzFR, 'front');
+    const fyRL = this.p.tireModel.lateralForce(slipRL, fzRL, 'rear');
+    const fyRR = this.p.tireModel.lateralForce(slipRR, fzRR, 'rear');
+    const sinD = Math.sin(delta);
+    const applyFrontLateral = (fy: number, wp: { x: number; y: number; z: number }) => {
+      if (fy === 0) return;
+      const fw = rotateBodyToWorld(fy * cosD, 0, -fy * sinD, heading);
+      this.body.addForceAtPoint(fw, wp, true);
+    };
+    const applyRearLateral = (fy: number, wp: { x: number; y: number; z: number }) => {
+      if (fy === 0) return;
+      const fw = rotateBodyToWorld(fy, 0, 0, heading);
+      this.body.addForceAtPoint(fw, wp, true);
+    };
+    if (wheels.fl.contact) applyFrontLateral(fyFL, wheels.fl.position);
+    if (wheels.fr.contact) applyFrontLateral(fyFR, wheels.fr.position);
+    if (wheels.rl.contact) applyRearLateral(fyRL, wheels.rl.position);
+    if (wheels.rr.contact) applyRearLateral(fyRR, wheels.rr.position);
 
     // Forward-only constraint: zero out negative body-frame vx after physics
     // step. We set linvel here pre-step, before world.step integrates further
@@ -393,10 +437,6 @@ export class FourWheelVehicle implements VehicleModel {
       const newLinZ = newVx * c - vy * s;
       this.body.setLinvel({ x: newLinX, y: 0, z: newLinZ }, true);
     }
-
-    void slipR; // referenced via wheelStates' axle-midpoint application
-    void aY;
-    void fzStaticRear;
   }
 
   // Per-wheel raycast against the terrain trimesh. Hardpoint is in world
@@ -436,6 +476,7 @@ export class FourWheelVehicle implements VehicleModel {
           contact: true,
           contactDistance: distFromHardpoint,
           fz: 0, // populated by step() after load transfer
+          slip: 0, // populated by step() after slip-angle calculation
         };
       } else {
         result[id] = {
@@ -443,6 +484,7 @@ export class FourWheelVehicle implements VehicleModel {
           contact: false,
           contactDistance: 0,
           fz: 0,
+          slip: 0,
         };
       }
     }

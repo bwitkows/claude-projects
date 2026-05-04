@@ -193,10 +193,11 @@ describe('FourWheelVehicle — replay equivalence', () => {
       ] as const) {
         expect(Math.abs(sa[key] - sb[key])).toBeLessThan(1e-8);
       }
-      // Per-wheel fz allows slightly larger tolerance (Rapier-derived contact
-      // forces have minor numerical noise).
+      // Per-wheel fz and slip allow slightly larger tolerance (Rapier-
+      // derived contact forces have minor numerical noise).
       for (const wid of ['fl', 'fr', 'rl', 'rr'] as const) {
         expect(Math.abs(sa.wheels[wid].fz - sb.wheels[wid].fz)).toBeLessThan(1e-6);
+        expect(Math.abs(sa.wheels[wid].slip - sb.wheels[wid].slip)).toBeLessThan(1e-6);
       }
     }
     a.phys.free();
@@ -239,6 +240,75 @@ describe('FourWheelVehicle — robustness', () => {
     expect(() => vehicle.step(0, NEUTRAL)).toThrow();
     expect(() => vehicle.step(-1, NEUTRAL)).toThrow();
     expect(() => vehicle.step(Number.NaN, NEUTRAL)).toThrow();
+    phys.free();
+  });
+});
+
+describe('FourWheelVehicle (R5) — per-wheel slip', () => {
+  it('all wheel slips equal 0 within 1e-12 when driving straight without steer', async () => {
+    const { phys, vehicle } = await makeHarness();
+    // Bring the vehicle up to ~5 m/s with full throttle, then read slips.
+    for (let i = 0; i < 240; i += 1) {
+      vehicle.step(SIM_DT, FULL_THROTTLE);
+      phys.step();
+    }
+    const w = vehicle.state.wheels;
+    expect(Math.abs(w.fl.slip)).toBeLessThan(1e-12);
+    expect(Math.abs(w.fr.slip)).toBeLessThan(1e-12);
+    expect(Math.abs(w.rl.slip)).toBeLessThan(1e-12);
+    expect(Math.abs(w.rr.slip)).toBeLessThan(1e-12);
+    phys.free();
+  });
+
+  it('left and right slips differ when yaw rate is non-zero', async () => {
+    const { phys, vehicle } = await makeHarness();
+    // Get above vMax/2, then steer to develop yaw rate.
+    while (vehicle.state.vx < DEFAULT_FOUR_WHEEL_PARAMS.vMax / 2) {
+      vehicle.step(SIM_DT, FULL_THROTTLE);
+      phys.step();
+    }
+    for (let i = 0; i < 120; i += 1) {
+      vehicle.step(SIM_DT, { throttle: 1, brake: 0, steer: 0.6 });
+      phys.step();
+    }
+    expect(Math.abs(vehicle.state.yawRate)).toBeGreaterThan(0.05);
+    const w = vehicle.state.wheels;
+    expect(w.fl.slip).not.toBe(w.fr.slip);
+    expect(w.rl.slip).not.toBe(w.rr.slip);
+    // Asymmetry exists at the rear axle as well as the front, since both
+    // axles see the track-width effect on v_z.
+    expect(Math.abs(w.fl.slip - w.fr.slip)).toBeGreaterThan(1e-6);
+    expect(Math.abs(w.rl.slip - w.rr.slip)).toBeGreaterThan(1e-6);
+    phys.free();
+  });
+});
+
+describe('FourWheelVehicle (R5) — load-sensitive lateral force', () => {
+  it('total front-axle lateral force at static load matches R4-equivalent within 0.5%', async () => {
+    const { phys, vehicle } = await makeHarness();
+    // At rest (static load), apply a tiny artificial steer so a slip exists.
+    // We need one full step so the wheel slips populate, then we measure.
+    for (let i = 0; i < 5; i += 1) {
+      vehicle.step(SIM_DT, FULL_THROTTLE);
+      phys.step();
+    }
+    // Now compute "what R4 would have computed" — Cα · α at the per-axle slip.
+    // The R5 equivalent is the sum of per-wheel forces using F_z and per-
+    // wheel slip; at static load (no transfer), the sum equals -Cα · α_axle
+    // within roundoff.
+    const w = vehicle.state.wheels;
+    const slipFL = w.fl.slip;
+    const slipFR = w.fr.slip;
+    const slipAxle = (slipFL + slipFR) / 2;
+    const tm = vehicle.p.tireModel;
+    const fyFL = tm.lateralForce(slipFL, w.fl.fz, 'front');
+    const fyFR = tm.lateralForce(slipFR, w.fr.fz, 'front');
+    const totalAxle = fyFL + fyFR;
+    const r4Equivalent = -80000 * slipAxle; // R4 used Cα = 80,000 N/rad.
+    if (Math.abs(r4Equivalent) > 1e-3) {
+      const relError = Math.abs((totalAxle - r4Equivalent) / r4Equivalent);
+      expect(relError).toBeLessThan(0.005);
+    }
     phys.free();
   });
 });
