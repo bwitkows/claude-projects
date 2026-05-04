@@ -49,3 +49,39 @@ export const NEUTRAL_BICYCLE_STATE: BicycleVehicleState = Object.freeze({
   slipF: 0,
   slipR: 0,
 });
+
+// Per-wheel state populated by R4's FourWheelVehicle. `position` is the wheel
+// hardpoint in world frame; `contact` reflects the most recent raycast result.
+// `fz` is the quasi-static normal force in newtons (0 when not in contact).
+export interface WheelState {
+  readonly position: { readonly x: number; readonly y: number; readonly z: number };
+  readonly contact: boolean;
+  readonly contactDistance: number;
+  readonly fz: number;
+}
+
+export interface FourWheelVehicleState extends BicycleVehicleState {
+  readonly wheels: {
+    readonly fl: WheelState;
+    readonly fr: WheelState;
+    readonly rl: WheelState;
+    readonly rr: WheelState;
+  };
+}
+
+const NEUTRAL_WHEEL_STATE: WheelState = Object.freeze({
+  position: Object.freeze({ x: 0, y: 0, z: 0 }),
+  contact: false,
+  contactDistance: 0,
+  fz: 0,
+});
+
+export const NEUTRAL_FOUR_WHEEL_STATE: FourWheelVehicleState = Object.freeze({
+  ...NEUTRAL_BICYCLE_STATE,
+  wheels: Object.freeze({
+    fl: NEUTRAL_WHEEL_STATE,
+    fr: NEUTRAL_WHEEL_STATE,
+    rl: NEUTRAL_WHEEL_STATE,
+    rr: NEUTRAL_WHEEL_STATE,
+  }),
+});

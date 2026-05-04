@@ -1,14 +1,15 @@
 import { type InputSource, KeyboardInputSource } from '../input/index.js';
-import { createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
+import { addTerrainCollider, createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
 import { ControlsOverlay, createScene, FpsCounter, type SceneHandle } from '../render/index.js';
 import { FixedStepLoop, SimClock } from '../sim/index.js';
 import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
 import { Heightmap } from '../terrain/index.js';
-import { BicycleVehicle, type VehicleModel } from '../vehicle/index.js';
+import { FourWheelVehicle, type VehicleModel } from '../vehicle/index.js';
 
-// Vehicle's mesh sits this far above the terrain surface — half the box
-// height, matching where R2's vehicle sat above the flat ground.
-const RIDE_HEIGHT = 0.5;
+// Vehicle ride-height is now owned by FourWheelVehicle (it sets body Y from
+// terrain.heightAt + its own rideHeight). This constant is kept only for the
+// initial chase-camera snap before the first sim step has run.
+const INITIAL_CAMERA_RIDE = 0.5;
 
 export interface AppHandle {
   readonly loop: FixedStepLoop;
@@ -17,9 +18,6 @@ export interface AppHandle {
   readonly telemetry: TelemetryBuffer;
   readonly input: InputSource;
   readonly heightmap: Heightmap;
-  // Exposed as the abstract interface so external consumers don't depend on
-  // the concrete model. Internally the bootstrap holds a typed reference for
-  // telemetry access to bicycle-specific state.
   readonly vehicle: VehicleModel;
   start(): void;
   stop(): void;
@@ -33,8 +31,15 @@ export interface BootstrapOptions {
 }
 
 export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
-  const physics = await createPhysicsWorld();
+  // R4 makes terrain a Rapier collider — skip the R0 flat-plane ground so
+  // wheel raycasts hit only the trimesh.
+  const physics = await createPhysicsWorld({ includeGroundPlane: false });
   const heightmap = new Heightmap();
+  // Build the trimesh terrain collider, then run one warmup physics step so
+  // Rapier's broad phase indexes the collider before the first wheel raycast.
+  addTerrainCollider(physics.world, heightmap);
+  physics.step();
+
   const scene = createScene({
     mount: opts.mount,
     width: opts.mount.clientWidth || window.innerWidth,
@@ -45,22 +50,16 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
   const controlsOverlay = opts.controlsElement ? new ControlsOverlay(opts.controlsElement) : null;
   const telemetry = new TelemetryBuffer();
   const input = new KeyboardInputSource();
-  const vehicle = new BicycleVehicle();
+  const vehicle = new FourWheelVehicle({ world: physics.world, terrain: heightmap });
   const clock = new SimClock();
 
-  // Snap chase camera to its steady-state pose for the initial vehicle state
-  // so the very first rendered frame is correctly framed. After this point
-  // the camera evolves via exponential decay each render frame.
+  // Snap chase camera to its steady-state pose for the initial vehicle state.
   {
     const v0 = vehicle.state;
-    const y0 = heightmap.heightAt(v0.x, v0.z) + RIDE_HEIGHT;
+    const y0 = heightmap.heightAt(v0.x, v0.z) + INITIAL_CAMERA_RIDE;
     scene.snapCamera({ x: v0.x, y: y0, z: v0.z }, v0.heading);
   }
 
-  // Render-frame wall-clock dt for the chase camera. R3 introduces a render-
-  // time piece of state (camera) that lives outside the deterministic sim
-  // loop, so we track wall-clock dt locally rather than threading it through
-  // FixedStepLoop's onRender callback (which only knows about sim alpha).
   let lastRenderMs = performance.now();
 
   const loop = new FixedStepLoop({
@@ -69,7 +68,10 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
       const control = input.read(s.time);
       vehicle.step(s.dt, control);
       physics.step();
+      // `vehicle` is typed as the concrete FourWheelVehicle inside this
+      // closure even though the AppHandle exposes only `VehicleModel`.
       const v = vehicle.state;
+      const w = v.wheels;
       telemetry.push({
         t: s.time,
         step: s.step,
@@ -82,6 +84,10 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
         yaw_rate: v.yawRate,
         slip_f: v.slipF,
         slip_r: v.slipR,
+        fz_fl: w.fl.fz,
+        fz_fr: w.fr.fz,
+        fz_rl: w.rl.fz,
+        fz_rr: w.rr.fz,
       });
     },
     onRender: () => {
@@ -89,16 +95,16 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
       const renderDt = Math.max(0, (nowMs - lastRenderMs) / 1000);
       lastRenderMs = nowMs;
       const v = vehicle.state;
-      const worldY = heightmap.heightAt(v.x, v.z) + RIDE_HEIGHT;
+      // R4: body Y is owned by FourWheelVehicle (it sets it from terrain
+      // each step). The vehicle mesh's render Y comes directly from the
+      // body's translation, not from a fresh heightmap sample.
+      const worldY = heightmap.heightAt(v.x, v.z) + INITIAL_CAMERA_RIDE;
       scene.updateVehicle({ x: v.x, y: worldY, z: v.z, heading: v.heading });
       scene.updateCamera({
         vehiclePos: { x: v.x, y: worldY, z: v.z },
         vehicleHeading: v.heading,
         dt: renderDt,
       });
-      // Refresh the keyboard overlay each frame from the abstract control
-      // state. Re-reading input here doesn't affect the sim (sim sampled it
-      // already in onStep) — it's purely a UI refresh.
       if (controlsOverlay) controlsOverlay.update(input.read(clock.time));
       scene.render();
       fps.tick();
