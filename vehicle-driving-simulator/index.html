@@ -31,11 +31,54 @@
         pointer-events: none;
         z-index: 10;
       }
+      #controls {
+        position: fixed;
+        bottom: 12px;
+        left: 12px;
+        display: grid;
+        grid-template-columns: repeat(3, 36px);
+        grid-auto-rows: 36px;
+        gap: 4px;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 6px;
+        pointer-events: none;
+        z-index: 10;
+      }
+      #controls .key {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 4px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background 0.05s linear, color 0.05s linear, border-color 0.05s linear;
+      }
+      #controls .key.pressed {
+        background: #ffd54a;
+        color: #1a1a1a;
+        border-color: #ffd54a;
+      }
+      #controls .key.row1-spacer {
+        background: transparent;
+        border-color: transparent;
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="fps">FPS: 0</div>
+    <div id="controls">
+      <div class="key row1-spacer"></div>
+      <div class="key" data-key="w">W</div>
+      <div class="key row1-spacer"></div>
+      <div class="key" data-key="a">A</div>
+      <div class="key" data-key="s">S</div>
+      <div class="key" data-key="d">D</div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -13,7 +13,8 @@ async function main(): Promise<void> {
   if (!mount || !fpsEl) {
     throw new Error('Required mount points (#app, #fps) missing from index.html');
   }
-  const app = await bootstrap({ mount, fpsElement: fpsEl });
+  const controlsEl = document.getElementById('controls') ?? undefined;
+  const app = await bootstrap({ mount, fpsElement: fpsEl, controlsElement: controlsEl });
   window.__app = app;
   app.start();
 }

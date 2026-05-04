@@ -1,6 +1,6 @@
 import { type InputSource, KeyboardInputSource } from '../input/index.js';
 import { createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
-import { createScene, FpsCounter, type SceneHandle } from '../render/index.js';
+import { ControlsOverlay, createScene, FpsCounter, type SceneHandle } from '../render/index.js';
 import { FixedStepLoop, SimClock } from '../sim/index.js';
 import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
 import { Heightmap } from '../terrain/index.js';
@@ -29,6 +29,7 @@ export interface AppHandle {
 export interface BootstrapOptions {
   readonly mount: HTMLElement;
   readonly fpsElement: HTMLElement;
+  readonly controlsElement?: HTMLElement;
 }
 
 export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
@@ -41,6 +42,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
     heightmap,
   });
   const fps = new FpsCounter(opts.fpsElement);
+  const controlsOverlay = opts.controlsElement ? new ControlsOverlay(opts.controlsElement) : null;
   const telemetry = new TelemetryBuffer();
   const input = new KeyboardInputSource();
   const vehicle = new BicycleVehicle();
@@ -94,6 +96,10 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
         vehicleHeading: v.heading,
         dt: renderDt,
       });
+      // Refresh the keyboard overlay each frame from the abstract control
+      // state. Re-reading input here doesn't affect the sim (sim sampled it
+      // already in onStep) — it's purely a UI refresh.
+      if (controlsOverlay) controlsOverlay.update(input.read(clock.time));
       scene.render();
       fps.tick();
     },

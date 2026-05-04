@@ -5,6 +5,7 @@ export {
   type ChaseStepInput,
   DEFAULT_CHASE_PARAMS,
 } from './camera.js';
+export { ControlsOverlay } from './controls.js';
 export { FpsCounter } from './fps.js';
 export {
   type CreateSceneOptions,
