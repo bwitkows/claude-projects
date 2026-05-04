@@ -1,0 +1,547 @@
+diff --git a/vehicle-driving-simulator/src/app/index.ts b/vehicle-driving-simulator/src/app/index.ts
+index 183cb7c..46434ae 100644
+--- a/vehicle-driving-simulator/src/app/index.ts
++++ b/vehicle-driving-simulator/src/app/index.ts
+@@ -1,8 +1,9 @@
+-import { type ControlState, type InputSource, KeyboardInputSource } from '../input/index.js';
++import { type InputSource, KeyboardInputSource } from '../input/index.js';
+ import { createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
+ import { createScene, FpsCounter, type SceneHandle } from '../render/index.js';
+ import { FixedStepLoop, SimClock } from '../sim/index.js';
+ import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
++import { KinematicVehicle, type VehicleModel } from '../vehicle/index.js';
+ 
+ export interface AppHandle {
+   readonly loop: FixedStepLoop;
+@@ -10,6 +11,7 @@ export interface AppHandle {
+   readonly physics: PhysicsWorld;
+   readonly telemetry: TelemetryBuffer;
+   readonly input: InputSource;
++  readonly vehicle: VehicleModel;
+   start(): void;
+   stop(): void;
+   dispose(): void;
+@@ -30,20 +32,32 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+   const fps = new FpsCounter(opts.fpsElement);
+   const telemetry = new TelemetryBuffer();
+   const input = new KeyboardInputSource();
++  const vehicle = new KinematicVehicle();
+   const clock = new SimClock();
+ 
+-  // The sim core is the single owner of physics stepping; the renderer reads
+-  // state from physics but never advances it.
++  // Sim ordering per spec: input is sampled once before integration; then the
++  // vehicle is stepped; then Rapier (still present from R0 — the kinematic
++  // vehicle does not interact with it but the world is part of the scaffold);
++  // then telemetry is recorded with post-step vehicle state.
+   const loop = new FixedStepLoop({
+     clock,
+     onStep: (s) => {
+-      // Sample input exactly once per step, before integration.
+-      const _control: ControlState = input.read(s.time);
+-      void _control; // R0 has no vehicle; control is read for spec compliance.
++      const control = input.read(s.time);
++      vehicle.step(s.dt, control);
+       physics.step();
+-      telemetry.push({ t: s.time, step: s.step });
++      const v = vehicle.state;
++      telemetry.push({
++        t: s.time,
++        step: s.step,
++        x: v.x,
++        z: v.z,
++        heading: v.heading,
++        speed: v.speed,
++      });
+     },
+     onRender: () => {
++      const v = vehicle.state;
++      scene.updateVehicle({ x: v.x, z: v.z, heading: v.heading });
+       scene.render();
+       fps.tick();
+     },
+@@ -62,6 +76,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+     physics,
+     telemetry,
+     input,
++    vehicle,
+     start: () => loop.run(),
+     stop: () => loop.stop(),
+     dispose: () => {
+diff --git a/vehicle-driving-simulator/src/global.d.ts b/vehicle-driving-simulator/src/global.d.ts
+new file mode 100644
+index 0000000..224a656
+--- /dev/null
++++ b/vehicle-driving-simulator/src/global.d.ts
+@@ -0,0 +1,11 @@
++// Test-only hook installed by src/main.ts so the Playwright e2e suite can
++// read live vehicle / telemetry state. Production code SHALL NOT depend on
++// this; production paths go through the typed exports of the modules under
++// src/.
++import type { AppHandle } from './app/index.js';
++
++declare global {
++  interface Window {
++    __app?: AppHandle;
++  }
++}
+diff --git a/vehicle-driving-simulator/src/main.ts b/vehicle-driving-simulator/src/main.ts
+index 81f6d4d..b1c25ea 100644
+--- a/vehicle-driving-simulator/src/main.ts
++++ b/vehicle-driving-simulator/src/main.ts
+@@ -1,5 +1,12 @@
+ import { bootstrap } from './app/index.js';
+ 
++// Test-only hook: the Playwright smoke test reads telemetry / vehicle state
++// via `window.__app`. The R1 spec asks for an e2e assertion on `|Δx|+|Δz|`
++// after holding `w`; reading that from the running app is the most direct
++// way without re-implementing telemetry parsing in the test. Production
++// code does not depend on this hook. The Window augmentation lives in
++// `src/global.d.ts` so both runtime and tests share the typing.
++
+ async function main(): Promise<void> {
+   const mount = document.getElementById('app');
+   const fpsEl = document.getElementById('fps');
+@@ -7,6 +14,7 @@ async function main(): Promise<void> {
+     throw new Error('Required mount points (#app, #fps) missing from index.html');
+   }
+   const app = await bootstrap({ mount, fpsElement: fpsEl });
++  window.__app = app;
+   app.start();
+ }
+ 
+diff --git a/vehicle-driving-simulator/src/render/index.ts b/vehicle-driving-simulator/src/render/index.ts
+index 1f44676..85fe13c 100644
+--- a/vehicle-driving-simulator/src/render/index.ts
++++ b/vehicle-driving-simulator/src/render/index.ts
+@@ -1,2 +1,7 @@
+ export { FpsCounter } from './fps.js';
+-export { type CreateSceneOptions, createScene, type SceneHandle } from './scene.js';
++export {
++  type CreateSceneOptions,
++  createScene,
++  type SceneHandle,
++  type VehicleTransform,
++} from './scene.js';
+diff --git a/vehicle-driving-simulator/src/render/scene.ts b/vehicle-driving-simulator/src/render/scene.ts
+index 1ff028d..738132f 100644
+--- a/vehicle-driving-simulator/src/render/scene.ts
++++ b/vehicle-driving-simulator/src/render/scene.ts
+@@ -2,6 +2,19 @@ import * as THREE from 'three';
+ 
+ const SKY_COLOR = 0x87ceeb;
+ const GROUND_COLOR = 0x4a7a3a;
++const VEHICLE_COLOR = 0xff5544;
++
++// Vehicle box dimensions (m): width × height × length. Length aligned with +Z
++// at heading=0, matching the kinematic model's coordinate convention.
++const VEHICLE_WIDTH = 1.8;
++const VEHICLE_HEIGHT = 1.0;
++const VEHICLE_LENGTH = 4.0;
++
++export interface VehicleTransform {
++  readonly x: number;
++  readonly z: number;
++  readonly heading: number;
++}
+ 
+ export interface SceneHandle {
+   readonly scene: THREE.Scene;
+@@ -10,6 +23,9 @@ export interface SceneHandle {
+   readonly canvas: HTMLCanvasElement;
+   render(): void;
+   resize(width: number, height: number): void;
++  // Read-only sync from vehicle state into the Three.js mesh transform.
++  // Safe for the renderer to call each frame; SHALL NOT mutate the source.
++  updateVehicle(t: VehicleTransform): void;
+   dispose(): void;
+ }
+ 
+@@ -45,13 +61,11 @@ export function createScene(opts: CreateSceneOptions): SceneHandle {
+   ground.position.set(0, 0, 0);
+   scene.add(ground);
+ 
+-  // Visual reference origin marker so the scene is not visually empty in R0.
+-  const marker = new THREE.Mesh(
+-    new THREE.BoxGeometry(0.5, 0.5, 0.5),
+-    new THREE.MeshStandardMaterial({ color: 0xff5544 }),
+-  );
+-  marker.position.set(0, 0.25, 0);
+-  scene.add(marker);
++  const vehicleGeo = new THREE.BoxGeometry(VEHICLE_WIDTH, VEHICLE_HEIGHT, VEHICLE_LENGTH);
++  const vehicleMat = new THREE.MeshStandardMaterial({ color: VEHICLE_COLOR, roughness: 0.6 });
++  const vehicleMesh = new THREE.Mesh(vehicleGeo, vehicleMat);
++  vehicleMesh.position.set(0, VEHICLE_HEIGHT / 2, 0);
++  scene.add(vehicleMesh);
+ 
+   return {
+     scene,
+@@ -64,12 +78,18 @@ export function createScene(opts: CreateSceneOptions): SceneHandle {
+       camera.aspect = w / h;
+       camera.updateProjectionMatrix();
+     },
++    updateVehicle: (t: VehicleTransform) => {
++      vehicleMesh.position.set(t.x, VEHICLE_HEIGHT / 2, t.z);
++      // heading is CCW positive when viewed from +Y, which corresponds to a
++      // -Y axis rotation in the right-handed Three.js convention.
++      vehicleMesh.rotation.set(0, -t.heading, 0);
++    },
+     dispose: () => {
+       renderer.dispose();
+       groundGeo.dispose();
+       groundMat.dispose();
+-      marker.geometry.dispose();
+-      (marker.material as THREE.Material).dispose();
++      vehicleGeo.dispose();
++      vehicleMat.dispose();
+       if (renderer.domElement.parentElement === opts.mount) {
+         opts.mount.removeChild(renderer.domElement);
+       }
+diff --git a/vehicle-driving-simulator/src/vehicle/index.ts b/vehicle-driving-simulator/src/vehicle/index.ts
+new file mode 100644
+index 0000000..5dcce4e
+--- /dev/null
++++ b/vehicle-driving-simulator/src/vehicle/index.ts
+@@ -0,0 +1,6 @@
++export {
++  DEFAULT_KINEMATIC_PARAMS,
++  KinematicVehicle,
++  type KinematicVehicleParams,
++} from './kinematic.js';
++export { NEUTRAL_VEHICLE_STATE, type VehicleModel, type VehicleState } from './types.js';
+diff --git a/vehicle-driving-simulator/src/vehicle/kinematic.test.ts b/vehicle-driving-simulator/src/vehicle/kinematic.test.ts
+new file mode 100644
+index 0000000..4b1b60c
+--- /dev/null
++++ b/vehicle-driving-simulator/src/vehicle/kinematic.test.ts
+@@ -0,0 +1,160 @@
++import { describe, expect, it } from 'vitest';
++import { SyntheticInputSource } from '../input/synthetic.js';
++import type { ControlState } from '../input/types.js';
++import { SIM_DT } from '../sim/clock.js';
++import { DEFAULT_KINEMATIC_PARAMS, KinematicVehicle } from './kinematic.js';
++
++const NEUTRAL: ControlState = { throttle: 0, brake: 0, steer: 0 };
++const FULL_THROTTLE: ControlState = { throttle: 1, brake: 0, steer: 0 };
++
++describe('KinematicVehicle — forward motion', () => {
++  it('accelerates from rest under full throttle, no lateral drift', () => {
++    const v = new KinematicVehicle();
++    for (let i = 0; i < 240; i += 1) v.step(SIM_DT, FULL_THROTTLE);
++    expect(v.state.speed).toBeGreaterThan(5);
++    expect(v.state.speed).toBeLessThanOrEqual(DEFAULT_KINEMATIC_PARAMS.vMax);
++    expect(v.state.z).toBeGreaterThan(0);
++    expect(Math.abs(v.state.x)).toBeLessThan(1e-9);
++    expect(Math.abs(v.state.heading)).toBeLessThan(1e-9);
++  });
++
++  it('saturates at vMax under sustained throttle', () => {
++    const v = new KinematicVehicle();
++    // 10 sim seconds is well past the time needed to reach vMax with aMax=6.
++    for (let i = 0; i < 240 * 10; i += 1) v.step(SIM_DT, FULL_THROTTLE);
++    expect(v.state.speed).toBeGreaterThan(DEFAULT_KINEMATIC_PARAMS.vMax - 0.5);
++    expect(v.state.speed).toBeLessThanOrEqual(DEFAULT_KINEMATIC_PARAMS.vMax);
++  });
++});
++
++describe('KinematicVehicle — steering', () => {
++  it('does not yaw when stationary even at full lock', () => {
++    const v = new KinematicVehicle();
++    const ctrl: ControlState = { throttle: 0, brake: 0, steer: 1 };
++    for (let i = 0; i < 240; i += 1) v.step(SIM_DT, ctrl);
++    expect(Math.abs(v.state.heading)).toBeLessThan(1e-9);
++    expect(v.state.speed).toBe(0);
++  });
++
++  it('yaws once moving above half vMax', () => {
++    const v = new KinematicVehicle();
++    // First throttle up until we cross vMax/2; aMax=6 → ~2s for half speed.
++    let stepsToHalf = 0;
++    while (v.state.speed < DEFAULT_KINEMATIC_PARAMS.vMax / 2 && stepsToHalf < 240 * 5) {
++      v.step(SIM_DT, FULL_THROTTLE);
++      stepsToHalf += 1;
++    }
++    expect(v.state.speed).toBeGreaterThan(DEFAULT_KINEMATIC_PARAMS.vMax / 2);
++    const headingBefore = v.state.heading;
++    const ctrl: ControlState = { throttle: 1, brake: 0, steer: 1 };
++    for (let i = 0; i < 60; i += 1) v.step(SIM_DT, ctrl);
++    expect(v.state.heading - headingBefore).toBeGreaterThan(0.05);
++    // Vehicle is still moving while turning.
++    expect(Math.abs(v.state.x) + Math.abs(v.state.z)).toBeGreaterThan(0);
++  });
++});
++
++describe('KinematicVehicle — brake', () => {
++  it('brakes to zero and never goes negative', () => {
++    const v = new KinematicVehicle({}, { speed: 10 });
++    const ctrl: ControlState = { throttle: 0, brake: 1, steer: 0 };
++    let reachedZero = false;
++    for (let i = 0; i < 240 * 5; i += 1) {
++      v.step(SIM_DT, ctrl);
++      expect(v.state.speed).toBeGreaterThanOrEqual(0);
++      if (v.state.speed === 0) {
++        reachedZero = true;
++        break;
++      }
++    }
++    expect(reachedZero).toBe(true);
++  });
++});
++
++describe('KinematicVehicle — coast drag', () => {
++  it('coasts to a stop in finite time under neutral controls', () => {
++    const v = new KinematicVehicle({}, { speed: 5 });
++    for (let i = 0; i < 240 * 30; i += 1) v.step(SIM_DT, NEUTRAL);
++    expect(v.state.speed).toBe(0);
++  });
++});
++
++describe('KinematicVehicle — closed-form integration', () => {
++  // Compares the implementation against an in-test reimplementation of the
++  // same formulas. If the implementation drifts, this test catches it.
++  it('matches a parallel reference implementation step-for-step', () => {
++    const veh = new KinematicVehicle();
++    const p = DEFAULT_KINEMATIC_PARAMS;
++    let x = 0;
++    let z = 0;
++    let heading = 0;
++    let speed = 0;
++
++    const seq: ControlState[] = [];
++    for (let i = 0; i < 60; i += 1) seq.push({ throttle: 1, brake: 0, steer: 0 });
++    for (let i = 0; i < 60; i += 1) seq.push({ throttle: 1, brake: 0, steer: 0.5 });
++    for (let i = 0; i < 60; i += 1) seq.push({ throttle: 0, brake: 1, steer: 0 });
++
++    for (const ctrl of seq) {
++      veh.step(SIM_DT, ctrl);
++      const desired = ctrl.throttle * p.vMax;
++      const dv = Math.max(-p.aMax * SIM_DT, Math.min(p.aMax * SIM_DT, desired - speed));
++      speed += dv;
++      speed = Math.max(0, speed - ctrl.brake * p.brakeDecel * SIM_DT);
++      speed = Math.max(0, speed - p.drag * SIM_DT);
++      speed = Math.min(p.vMax, speed);
++      const yaw = ctrl.steer * p.yawRateAtVMax * (speed / p.vMax);
++      heading += yaw * SIM_DT;
++      x += speed * Math.sin(heading) * SIM_DT;
++      z += speed * Math.cos(heading) * SIM_DT;
++
++      expect(Math.abs(veh.state.x - x)).toBeLessThan(1e-12);
++      expect(Math.abs(veh.state.z - z)).toBeLessThan(1e-12);
++      expect(Math.abs(veh.state.heading - heading)).toBeLessThan(1e-12);
++      expect(Math.abs(veh.state.speed - speed)).toBeLessThan(1e-12);
++    }
++  });
++});
++
++describe('KinematicVehicle — replay equivalence', () => {
++  it('two instances driven by the same SyntheticInputSource match within 1e-8', () => {
++    const events = [
++      { t: 0, state: { throttle: 1, brake: 0, steer: 0 } },
++      { t: 0.5, state: { throttle: 1, brake: 0, steer: 0.7 } },
++      { t: 0.75, state: { throttle: 1, brake: 0, steer: -0.7 } },
++      { t: 1.0, state: { throttle: 0, brake: 1, steer: 0 } },
++    ];
++    const a = new KinematicVehicle();
++    const b = new KinematicVehicle();
++    const srcA = new SyntheticInputSource(events);
++    const srcB = new SyntheticInputSource(events);
++    for (let i = 0; i < 240; i += 1) {
++      const t = i * SIM_DT;
++      a.step(SIM_DT, srcA.read(t));
++      b.step(SIM_DT, srcB.read(t));
++      expect(Math.abs(a.state.x - b.state.x)).toBeLessThan(1e-8);
++      expect(Math.abs(a.state.z - b.state.z)).toBeLessThan(1e-8);
++      expect(Math.abs(a.state.heading - b.state.heading)).toBeLessThan(1e-8);
++      expect(Math.abs(a.state.speed - b.state.speed)).toBeLessThan(1e-8);
++    }
++  });
++});
++
++describe('KinematicVehicle — reset', () => {
++  it('restores initial state with optional overrides', () => {
++    const v = new KinematicVehicle();
++    for (let i = 0; i < 100; i += 1) v.step(SIM_DT, FULL_THROTTLE);
++    v.reset({ x: 10, heading: Math.PI / 2 });
++    expect(v.state.x).toBe(10);
++    expect(v.state.z).toBe(0);
++    expect(v.state.heading).toBe(Math.PI / 2);
++    expect(v.state.speed).toBe(0);
++  });
++
++  it('rejects invalid dt', () => {
++    const v = new KinematicVehicle();
++    expect(() => v.step(0, NEUTRAL)).toThrow();
++    expect(() => v.step(-1, NEUTRAL)).toThrow();
++    expect(() => v.step(Number.NaN, NEUTRAL)).toThrow();
++  });
++});
+diff --git a/vehicle-driving-simulator/src/vehicle/kinematic.ts b/vehicle-driving-simulator/src/vehicle/kinematic.ts
+new file mode 100644
+index 0000000..0303bdd
+--- /dev/null
++++ b/vehicle-driving-simulator/src/vehicle/kinematic.ts
+@@ -0,0 +1,73 @@
++import type { ControlState } from '../input/types.js';
++import { NEUTRAL_VEHICLE_STATE, type VehicleModel, type VehicleState } from './types.js';
++
++export interface KinematicVehicleParams {
++  readonly vMax: number;
++  readonly aMax: number;
++  readonly brakeDecel: number;
++  readonly drag: number;
++  readonly yawRateAtVMax: number;
++}
++
++export const DEFAULT_KINEMATIC_PARAMS: KinematicVehicleParams = Object.freeze({
++  vMax: 25, // m/s, ~90 km/h
++  aMax: 6, // m/s² throttle accel
++  brakeDecel: 12, // m/s² braking
++  drag: 0.5, // m/s² coast drag
++  yawRateAtVMax: 1.5, // rad/s at full lock and full speed
++});
++
++function clamp(v: number, lo: number, hi: number): number {
++  return v < lo ? lo : v > hi ? hi : v;
++}
++
++export class KinematicVehicle implements VehicleModel {
++  private _state: VehicleState;
++  private readonly p: KinematicVehicleParams;
++
++  constructor(params: Partial<KinematicVehicleParams> = {}, initial?: Partial<VehicleState>) {
++    this.p = { ...DEFAULT_KINEMATIC_PARAMS, ...params };
++    this._state = { ...NEUTRAL_VEHICLE_STATE, ...initial };
++  }
++
++  get state(): VehicleState {
++    return this._state;
++  }
++
++  reset(partial?: Partial<VehicleState>): void {
++    this._state = { ...NEUTRAL_VEHICLE_STATE, ...partial };
++  }
++
++  step(dt: number, control: ControlState): void {
++    if (!Number.isFinite(dt) || dt <= 0) {
++      throw new Error(`KinematicVehicle.step: dt must be > 0, got ${dt}`);
++    }
++    const { vMax, aMax, brakeDecel, drag, yawRateAtVMax } = this.p;
++    let { x, z, heading, speed } = this._state;
++
++    // Throttle: bring speed toward `throttle * vMax` at rate aMax.
++    const desired = clamp(control.throttle, 0, 1) * vMax;
++    const dv = clamp(desired - speed, -aMax * dt, aMax * dt);
++    speed += dv;
++
++    // Brake: subtractive, never negative.
++    speed = Math.max(0, speed - clamp(control.brake, 0, 1) * brakeDecel * dt);
++
++    // Coast drag (always applied, kept small so it doesn't fight throttle).
++    speed = Math.max(0, speed - drag * dt);
++
++    // Cap to vMax even if floating-point error pushed past it.
++    speed = clamp(speed, 0, vMax);
++
++    // Yaw rate scales with current speed → no turn-in-place.
++    const steer = clamp(control.steer, -1, 1);
++    const yawRate = steer * yawRateAtVMax * (speed / vMax);
++    heading += yawRate * dt;
++
++    // Forward-only translation along heading. heading=0 → +Z.
++    x += speed * Math.sin(heading) * dt;
++    z += speed * Math.cos(heading) * dt;
++
++    this._state = { x, z, heading, speed };
++  }
++}
+diff --git a/vehicle-driving-simulator/src/vehicle/types.ts b/vehicle-driving-simulator/src/vehicle/types.ts
+new file mode 100644
+index 0000000..4a8685d
+--- /dev/null
++++ b/vehicle-driving-simulator/src/vehicle/types.ts
+@@ -0,0 +1,28 @@
++// World-space pose and forward-speed scalar of a vehicle.
++//
++// Convention (fixed by the R1 spec): heading = 0 points along +Z, and yaw is
++// counter-clockwise positive when viewed from +Y. In the right-handed Three.js
++// coordinate system this corresponds to a -Y axis rotation by `heading`.
++export interface VehicleState {
++  readonly x: number;
++  readonly z: number;
++  readonly heading: number;
++  readonly speed: number;
++}
++
++export interface VehicleModel {
++  readonly state: VehicleState;
++  // Synchronous; mutates internal state. Called exactly once per sim step,
++  // after the input source has been sampled and before telemetry is recorded.
++  step(dt: number, control: import('../input/types.js').ControlState): void;
++  // Repositions the vehicle. Fields not provided in `partial` keep their
++  // current value. Used by tests / replay to set deterministic initial state.
++  reset(partial?: Partial<VehicleState>): void;
++}
++
++export const NEUTRAL_VEHICLE_STATE: VehicleState = Object.freeze({
++  x: 0,
++  z: 0,
++  heading: 0,
++  speed: 0,
++});
+diff --git a/vehicle-driving-simulator/tests/e2e/smoke.spec.ts b/vehicle-driving-simulator/tests/e2e/smoke.spec.ts
+index 6a735a1..2cc8628 100644
+--- a/vehicle-driving-simulator/tests/e2e/smoke.spec.ts
++++ b/vehicle-driving-simulator/tests/e2e/smoke.spec.ts
+@@ -1,5 +1,8 @@
+ import { expect, test } from '@playwright/test';
+ 
++// The window.__app augmentation is declared in src/global.d.ts and is in
++// scope here because the project's tsconfig includes both `src` and `tests`.
++
+ test('page boots and FPS exceeds 30 within 5 seconds', async ({ page }) => {
+   const consoleErrors: string[] = [];
+   page.on('console', (msg) => {
+@@ -8,7 +11,6 @@ test('page boots and FPS exceeds 30 within 5 seconds', async ({ page }) => {
+ 
+   await page.goto('/');
+ 
+-  // Wait for FPS overlay to settle into a > 30 reading.
+   await expect
+     .poll(
+       async () => {
+@@ -22,3 +24,35 @@ test('page boots and FPS exceeds 30 within 5 seconds', async ({ page }) => {
+ 
+   expect(consoleErrors).toEqual([]);
+ });
++
++test('vehicle moves more than 0.5 m when W is held for 2 seconds', async ({ page }) => {
++  await page.goto('/');
++
++  // Wait for the app handle to be exposed (bootstrap is async).
++  await page.waitForFunction(() => window.__app !== undefined, undefined, { timeout: 10_000 });
++  // Wait one render frame so the loop has run at least once.
++  await page.waitForFunction(() => (window.__app?.telemetry.length ?? 0) > 0, undefined, {
++    timeout: 5_000,
++  });
++
++  const before = await page.evaluate(() => {
++    const v = window.__app!.vehicle.state;
++    return { x: v.x, z: v.z };
++  });
++
++  // Click the canvas first so keyboard focus lands on something that bubbles
++  // events to window (the keyboard listener is on window).
++  await page.locator('canvas').click();
++  await page.keyboard.down('w');
++  await page.waitForTimeout(2000);
++  await page.keyboard.up('w');
++
++  const after = await page.evaluate(() => {
++    const v = window.__app!.vehicle.state;
++    return { x: v.x, z: v.z };
++  });
++
++  const dx = Math.abs(after.x - before.x);
++  const dz = Math.abs(after.z - before.z);
++  expect(dx + dz).toBeGreaterThan(0.5);
++});
