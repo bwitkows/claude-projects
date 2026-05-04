@@ -3,7 +3,7 @@ import { createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
 import { createScene, FpsCounter, type SceneHandle } from '../render/index.js';
 import { FixedStepLoop, SimClock } from '../sim/index.js';
 import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
-import { KinematicVehicle, type VehicleModel } from '../vehicle/index.js';
+import { BicycleVehicle, type VehicleModel } from '../vehicle/index.js';
 
 export interface AppHandle {
   readonly loop: FixedStepLoop;
@@ -11,6 +11,9 @@ export interface AppHandle {
   readonly physics: PhysicsWorld;
   readonly telemetry: TelemetryBuffer;
   readonly input: InputSource;
+  // Exposed as the abstract interface so external consumers don't depend on
+  // the concrete model. Internally the bootstrap holds a typed reference for
+  // telemetry access to bicycle-specific state.
   readonly vehicle: VehicleModel;
   start(): void;
   stop(): void;
@@ -32,13 +35,13 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
   const fps = new FpsCounter(opts.fpsElement);
   const telemetry = new TelemetryBuffer();
   const input = new KeyboardInputSource();
-  const vehicle = new KinematicVehicle();
+  const vehicle = new BicycleVehicle();
   const clock = new SimClock();
 
   // Sim ordering per spec: input is sampled once before integration; then the
-  // vehicle is stepped; then Rapier (still present from R0 — the kinematic
-  // vehicle does not interact with it but the world is part of the scaffold);
-  // then telemetry is recorded with post-step vehicle state.
+  // vehicle is stepped; then Rapier (still present from R0 — the bicycle
+  // vehicle, like the kinematic, does not interact with it but the world is
+  // part of the scaffold); then telemetry is recorded with post-step state.
   const loop = new FixedStepLoop({
     clock,
     onStep: (s) => {
@@ -53,6 +56,11 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
         z: v.z,
         heading: v.heading,
         speed: v.speed,
+        vx: v.vx,
+        vy: v.vy,
+        yaw_rate: v.yawRate,
+        slip_f: v.slipF,
+        slip_r: v.slipR,
       });
     },
     onRender: () => {

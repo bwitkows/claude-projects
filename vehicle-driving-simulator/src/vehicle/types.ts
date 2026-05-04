@@ -26,3 +26,26 @@ export const NEUTRAL_VEHICLE_STATE: VehicleState = Object.freeze({
   heading: 0,
   speed: 0,
 });
+
+// Extended state produced by the R2 bicycle model and any later rung that
+// continues to expose body-frame velocities and slip angles. Structurally a
+// superset of `VehicleState`.
+export interface BicycleVehicleState extends VehicleState {
+  readonly vx: number;
+  readonly vy: number;
+  readonly yawRate: number;
+  readonly slipF: number;
+  readonly slipR: number;
+}
+
+export const NEUTRAL_BICYCLE_STATE: BicycleVehicleState = Object.freeze({
+  x: 0,
+  z: 0,
+  heading: 0,
+  speed: 0,
+  vx: 0,
+  vy: 0,
+  yawRate: 0,
+  slipF: 0,
+  slipR: 0,
+});
