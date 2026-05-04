@@ -105,6 +105,10 @@ jobs:
                   margin-top: 0.25rem;
                   font-size: 0.875rem;
                 }
+                ul.rungs .tokens {
+                  color: #1f2328;
+                  font-weight: 500;
+                }
                 footer {
                   color: #6e7781;
                   font-size: 0.85rem;
@@ -142,10 +146,35 @@ jobs:
               | sed -E 's/^[Rr][0-9]+ complete: //' \
               | awk -F ' \\+ ' '{print $1}')
             label="${rung^^} — ${change:-no description}"
+
+            # Read tokens from the first eval result.json for this rung at HEAD.
+            # Path: vehicle-driving-simulator/evals/<RUNG>/<tool>/<attempt>/result.json
+            rung_upper="${rung^^}"
+            result_path=$(find "vehicle-driving-simulator/evals/${rung_upper}" \
+              -mindepth 3 -maxdepth 3 -name 'result.json' 2>/dev/null \
+              | sort | head -1 || true)
+            tokens_html=""
+            if [[ -n "$result_path" && -f "$result_path" ]]; then
+              total=$(jq -r '.tokens.total // empty' "$result_path")
+              kind=$(jq -r '.tokens.kind // "measured"' "$result_path")
+              tool=$(jq -r '.tool // "unknown"' "$result_path")
+              if [[ -n "$total" ]]; then
+                # Format as e.g. 180k or 1.2M.
+                if (( total >= 1000000 )); then
+                  pretty=$(awk -v t="$total" 'BEGIN { printf "%.1fM", t/1000000 }')
+                else
+                  pretty="$((total / 1000))k"
+                fi
+                suffix=""
+                [[ "$kind" == "estimated" ]] && suffix=" (est.)"
+                tokens_html="<span class=\"tokens\">${pretty}${suffix} tokens · ${tool}</span>"
+              fi
+            fi
+
             cat >> staging/index.html <<HTML_LI
                   <li>
                     <a href="${rung}/">${label}</a>
-                    <small>built from <code>${tag}</code></small>
+                    <small>built from <code>${tag}</code> ${tokens_html:+· }${tokens_html}</small>
                   </li>
           HTML_LI
           done

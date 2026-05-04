@@ -8,6 +8,11 @@
   "endedAt": "2026-05-04T14:30:00Z",
   "wallClockSeconds": 900,
   "humanInterventions": 0,
+  "tokens": {
+    "total": 100000,
+    "kind": "estimated",
+    "basis": "Recorded post-hoc. Same session as R0 (~28% session-limits used in total). R1's share is 10% — R1 reused R0's scaffolding and dependency choices, and most R1 effort went into the kinematic integrator + tests (one self-corrected test threshold) and wiring vehicle into render/telemetry. See R0's result.json for the full split rationale."
+  },
   "checks": {
     "typecheck": "pass",
     "lint": "pass",

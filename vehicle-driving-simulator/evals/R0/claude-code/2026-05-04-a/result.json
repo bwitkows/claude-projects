@@ -8,6 +8,11 @@
   "endedAt": "2026-05-04T13:55:00Z",
   "wallClockSeconds": 1500,
   "humanInterventions": 0,
+  "tokens": {
+    "total": 180000,
+    "kind": "estimated",
+    "basis": "Recorded post-hoc. The single Claude Code session that produced R0, R0 housekeeping, R1 spec, R1 implementation, R1 housekeeping, and Pages deploy reached ~28% of its session limit. Allocated 18% to R0 (project-bootstrap + agent policy + R0 eval artifacts) and 10% to R1 (spec + impl + eval + Pages); split weighted by relative diff size and exploration depth (R0 included dependency selection and Rapier API spelunking)."
+  },
   "checks": {
     "typecheck": "pass",
     "lint": "pass",

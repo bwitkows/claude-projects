@@ -37,6 +37,12 @@ A run is **partially passed** iff (1)–(5) hold but (6) does not. Don't conflat
   "endedAt": "2026-05-04T13:24:00Z",
   "wallClockSeconds": 5040,
   "humanInterventions": 0,
+  "tokens": {
+    "total": 180000,
+    "kind": "measured",
+    "input": 140000,
+    "output": 40000
+  },
   "checks": {
     "typecheck": "pass",
     "lint": "pass",
@@ -51,6 +57,15 @@ A run is **partially passed** iff (1)–(5) hold but (6) does not. Don't conflat
   "filesTouched": 42
 }
 ```
+
+### `tokens` field
+
+`total` is required; `kind` is one of:
+
+- `"measured"` — pulled from the tool's billing or session-cost output. `input` and `output` (and optionally `cacheRead`, `cacheWrite`) SHOULD be set.
+- `"estimated"` — derived after the fact (e.g. from a session-share percentage). Set a `basis` field documenting the derivation. Comparisons across `estimated` rows are weaker than across `measured` rows; flag this in `notes.md`.
+
+The deploy workflow at the repo root reads `tokens.total` from each rung's first eval `result.json` and surfaces it on the Pages landing page. The token field becomes the headline cost metric for cross-tool comparison.
 
 ## Rules for a fair comparison
 
