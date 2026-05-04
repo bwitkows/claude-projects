@@ -1,0 +1,821 @@
+diff --git a/vehicle-driving-simulator/src/app/index.ts b/vehicle-driving-simulator/src/app/index.ts
+index e190e3f..03e8843 100644
+--- a/vehicle-driving-simulator/src/app/index.ts
++++ b/vehicle-driving-simulator/src/app/index.ts
+@@ -3,14 +3,20 @@ import { createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
+ import { createScene, FpsCounter, type SceneHandle } from '../render/index.js';
+ import { FixedStepLoop, SimClock } from '../sim/index.js';
+ import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
++import { Heightmap } from '../terrain/index.js';
+ import { BicycleVehicle, type VehicleModel } from '../vehicle/index.js';
+ 
++// Vehicle's mesh sits this far above the terrain surface — half the box
++// height, matching where R2's vehicle sat above the flat ground.
++const RIDE_HEIGHT = 0.5;
++
+ export interface AppHandle {
+   readonly loop: FixedStepLoop;
+   readonly scene: SceneHandle;
+   readonly physics: PhysicsWorld;
+   readonly telemetry: TelemetryBuffer;
+   readonly input: InputSource;
++  readonly heightmap: Heightmap;
+   // Exposed as the abstract interface so external consumers don't depend on
+   // the concrete model. Internally the bootstrap holds a typed reference for
+   // telemetry access to bicycle-specific state.
+@@ -27,10 +33,12 @@ export interface BootstrapOptions {
+ 
+ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+   const physics = await createPhysicsWorld();
++  const heightmap = new Heightmap();
+   const scene = createScene({
+     mount: opts.mount,
+     width: opts.mount.clientWidth || window.innerWidth,
+     height: opts.mount.clientHeight || window.innerHeight,
++    heightmap,
+   });
+   const fps = new FpsCounter(opts.fpsElement);
+   const telemetry = new TelemetryBuffer();
+@@ -38,10 +46,21 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+   const vehicle = new BicycleVehicle();
+   const clock = new SimClock();
+ 
+-  // Sim ordering per spec: input is sampled once before integration; then the
+-  // vehicle is stepped; then Rapier (still present from R0 — the bicycle
+-  // vehicle, like the kinematic, does not interact with it but the world is
+-  // part of the scaffold); then telemetry is recorded with post-step state.
++  // Snap chase camera to its steady-state pose for the initial vehicle state
++  // so the very first rendered frame is correctly framed. After this point
++  // the camera evolves via exponential decay each render frame.
++  {
++    const v0 = vehicle.state;
++    const y0 = heightmap.heightAt(v0.x, v0.z) + RIDE_HEIGHT;
++    scene.snapCamera({ x: v0.x, y: y0, z: v0.z }, v0.heading);
++  }
++
++  // Render-frame wall-clock dt for the chase camera. R3 introduces a render-
++  // time piece of state (camera) that lives outside the deterministic sim
++  // loop, so we track wall-clock dt locally rather than threading it through
++  // FixedStepLoop's onRender callback (which only knows about sim alpha).
++  let lastRenderMs = performance.now();
++
+   const loop = new FixedStepLoop({
+     clock,
+     onStep: (s) => {
+@@ -64,8 +83,17 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+       });
+     },
+     onRender: () => {
++      const nowMs = performance.now();
++      const renderDt = Math.max(0, (nowMs - lastRenderMs) / 1000);
++      lastRenderMs = nowMs;
+       const v = vehicle.state;
+-      scene.updateVehicle({ x: v.x, z: v.z, heading: v.heading });
++      const worldY = heightmap.heightAt(v.x, v.z) + RIDE_HEIGHT;
++      scene.updateVehicle({ x: v.x, y: worldY, z: v.z, heading: v.heading });
++      scene.updateCamera({
++        vehiclePos: { x: v.x, y: worldY, z: v.z },
++        vehicleHeading: v.heading,
++        dt: renderDt,
++      });
+       scene.render();
+       fps.tick();
+     },
+@@ -84,6 +112,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+     physics,
+     telemetry,
+     input,
++    heightmap,
+     vehicle,
+     start: () => loop.run(),
+     stop: () => loop.stop(),
+diff --git a/vehicle-driving-simulator/src/render/camera.test.ts b/vehicle-driving-simulator/src/render/camera.test.ts
+new file mode 100644
+index 0000000..2028c0d
+--- /dev/null
++++ b/vehicle-driving-simulator/src/render/camera.test.ts
+@@ -0,0 +1,96 @@
++import { describe, expect, it } from 'vitest';
++import { ChaseCameraState, DEFAULT_CHASE_PARAMS } from './camera.js';
++
++describe('ChaseCameraState — snap', () => {
++  it('places camera at the configured world-frame offset for heading=0', () => {
++    const cam = new ChaseCameraState();
++    cam.snap({ x: 0, y: 0, z: 0 }, 0);
++    expect(cam.position.x).toBeCloseTo(0, 12);
++    expect(cam.position.y).toBeCloseTo(4, 12);
++    expect(cam.position.z).toBeCloseTo(-8, 12);
++  });
++
++  it('rotates the offset around +Y when heading changes', () => {
++    const cam = new ChaseCameraState();
++    // Vehicle facing +X (heading = π/2). Body offset (0,4,-8) rotates so
++    // "behind" points -X. Expected world position: (-(-8) → 8 wait let me redo.
++    // body (0, 4, -8) rotated by π/2 (CCW around +Y, mapping +Z → +X):
++    //  worldX = bx*cos + bz*sin = 0*0 + -8*1 = -8
++    //  worldZ = -bx*sin + bz*cos = 0 + -8*0 = 0
++    // So camera is at (-8, 4, 0) when vehicle at origin facing +X.
++    cam.snap({ x: 0, y: 0, z: 0 }, Math.PI / 2);
++    expect(cam.position.x).toBeCloseTo(-8, 12);
++    expect(cam.position.y).toBeCloseTo(4, 12);
++    expect(cam.position.z).toBeCloseTo(0, 12);
++  });
++});
++
++describe('ChaseCameraState — step monotonic convergence', () => {
++  it('one step from far-from-target advances each component toward target', () => {
++    const cam = new ChaseCameraState(
++      {},
++      {
++        position: { x: 100, y: 100, z: 100 },
++        lookAt: { x: 100, y: 100, z: 100 },
++      },
++    );
++    const before = { ...cam.position };
++    cam.step({ vehiclePos: { x: 0, y: 0, z: 0 }, vehicleHeading: 0, dt: 1 / 60 });
++    // Target is (0,4,-8) → from (100,100,100) all three should move toward target.
++    expect(Math.abs(cam.position.x)).toBeLessThan(Math.abs(before.x));
++    expect(Math.abs(cam.position.y - 4)).toBeLessThan(Math.abs(before.y - 4));
++    expect(Math.abs(cam.position.z - -8)).toBeLessThan(Math.abs(before.z - -8));
++  });
++});
++
++describe('ChaseCameraState — steady state', () => {
++  it('converges to the configured body-frame offset within 1e-6 after several seconds', () => {
++    const cam = new ChaseCameraState();
++    // Start very far away.
++    cam.position = { x: 1000, y: 1000, z: 1000 };
++    cam.lookAt = { x: 1000, y: 1000, z: 1000 };
++    const dt = 1 / 60;
++    for (let i = 0; i < 60 * 5; i += 1) {
++      cam.step({ vehiclePos: { x: 0, y: 0, z: 0 }, vehicleHeading: 0, dt });
++    }
++    expect(Math.abs(cam.position.x - 0)).toBeLessThan(1e-6);
++    expect(Math.abs(cam.position.y - 4)).toBeLessThan(1e-6);
++    expect(Math.abs(cam.position.z - -8)).toBeLessThan(1e-6);
++  });
++
++  it('preserves body-frame offset under heading change', () => {
++    const cam = new ChaseCameraState();
++    cam.snap({ x: 0, y: 0, z: 0 }, 0);
++    // Now move the vehicle to a new position and heading; run to steady state.
++    const vehiclePos = { x: 25, y: 0, z: -10 };
++    const vehicleHeading = Math.PI / 3;
++    const dt = 1 / 60;
++    for (let i = 0; i < 60 * 5; i += 1) {
++      cam.step({ vehiclePos, vehicleHeading, dt });
++    }
++    // De-rotate the camera-vehicle vector by -heading and check it equals
++    // the body-frame offset.
++    const dx = cam.position.x - vehiclePos.x;
++    const dy = cam.position.y - vehiclePos.y;
++    const dz = cam.position.z - vehiclePos.z;
++    const c = Math.cos(-vehicleHeading);
++    const s = Math.sin(-vehicleHeading);
++    const bodyX = dx * c + dz * s;
++    const bodyZ = -dx * s + dz * c;
++    expect(Math.abs(bodyX - DEFAULT_CHASE_PARAMS.offset.x)).toBeLessThan(1e-6);
++    expect(Math.abs(dy - DEFAULT_CHASE_PARAMS.offset.y)).toBeLessThan(1e-6);
++    expect(Math.abs(bodyZ - DEFAULT_CHASE_PARAMS.offset.z)).toBeLessThan(1e-6);
++  });
++});
++
++describe('ChaseCameraState — input validation', () => {
++  it('rejects negative or non-finite dt', () => {
++    const cam = new ChaseCameraState();
++    expect(() =>
++      cam.step({ vehiclePos: { x: 0, y: 0, z: 0 }, vehicleHeading: 0, dt: -1 }),
++    ).toThrow();
++    expect(() =>
++      cam.step({ vehiclePos: { x: 0, y: 0, z: 0 }, vehicleHeading: 0, dt: Number.NaN }),
++    ).toThrow();
++  });
++});
+diff --git a/vehicle-driving-simulator/src/render/camera.ts b/vehicle-driving-simulator/src/render/camera.ts
+new file mode 100644
+index 0000000..7454005
+--- /dev/null
++++ b/vehicle-driving-simulator/src/render/camera.ts
+@@ -0,0 +1,119 @@
++// Pure helper for the chase camera. No Three.js types — the scene module
++// reads the helper's outputs and applies them to a THREE.PerspectiveCamera.
++// Keeping it pure makes it unit-testable in node without a DOM.
++
++export interface Vec3 {
++  x: number;
++  y: number;
++  z: number;
++}
++
++export interface ChaseCameraParams {
++  // Body-frame offset from the vehicle origin to the camera. At heading=0
++  // this is also the world-frame offset. Default: (0, 4, -8) → 4 m up, 8 m
++  // behind a vehicle facing +Z.
++  readonly offset: Vec3;
++  // Body-frame offset from the vehicle origin to the look-at point. Default
++  // (0, 1, 4) → 1 m up, 4 m ahead, so the camera leads the vehicle.
++  readonly lookAtOffset: Vec3;
++  // Exponential decay rate (per second) for both position and look-at.
++  readonly decay: number;
++}
++
++export const DEFAULT_CHASE_PARAMS: ChaseCameraParams = Object.freeze({
++  offset: Object.freeze({ x: 0, y: 4, z: -8 }),
++  lookAtOffset: Object.freeze({ x: 0, y: 1, z: 4 }),
++  decay: 6,
++});
++
++export interface ChaseStepInput {
++  readonly vehiclePos: Vec3;
++  readonly vehicleHeading: number;
++  readonly dt: number;
++}
++
++export interface ChaseFrame {
++  readonly position: Vec3;
++  readonly lookAt: Vec3;
++}
++
++// Rotates a body-frame offset (bx, by, bz) by `heading` (CCW around +Y) into
++// world frame. Heading sign matches the R1 vehicle convention: heading=0 →
++// forward = +Z, heading=π/2 → forward = +X.
++function rotateBodyToWorld(b: Vec3, heading: number): Vec3 {
++  const c = Math.cos(heading);
++  const s = Math.sin(heading);
++  return {
++    x: b.x * c + b.z * s,
++    y: b.y,
++    z: -b.x * s + b.z * c,
++  };
++}
++
++export class ChaseCameraState {
++  readonly params: ChaseCameraParams;
++  position: Vec3;
++  lookAt: Vec3;
++
++  constructor(params: Partial<ChaseCameraParams> = {}, initial?: Partial<ChaseFrame>) {
++    this.params = {
++      ...DEFAULT_CHASE_PARAMS,
++      ...params,
++    };
++    this.position = { ...(initial?.position ?? { x: 0, y: 0, z: 0 }) };
++    this.lookAt = { ...(initial?.lookAt ?? { x: 0, y: 0, z: 0 }) };
++  }
++
++  // Snap immediately to the steady-state position for the given vehicle pose,
++  // skipping the lerp. Useful to position the camera correctly on the very
++  // first frame, before any wall-clock dt has been measured.
++  snap(vehiclePos: Vec3, vehicleHeading: number): void {
++    const offset = rotateBodyToWorld(this.params.offset, vehicleHeading);
++    const look = rotateBodyToWorld(this.params.lookAtOffset, vehicleHeading);
++    this.position = {
++      x: vehiclePos.x + offset.x,
++      y: vehiclePos.y + offset.y,
++      z: vehiclePos.z + offset.z,
++    };
++    this.lookAt = {
++      x: vehiclePos.x + look.x,
++      y: vehiclePos.y + look.y,
++      z: vehiclePos.z + look.z,
++    };
++  }
++
++  step(input: ChaseStepInput): ChaseFrame {
++    if (!Number.isFinite(input.dt) || input.dt < 0) {
++      throw new Error(`ChaseCameraState.step: dt must be finite and >= 0, got ${input.dt}`);
++    }
++    const offset = rotateBodyToWorld(this.params.offset, input.vehicleHeading);
++    const look = rotateBodyToWorld(this.params.lookAtOffset, input.vehicleHeading);
++    const desiredPos: Vec3 = {
++      x: input.vehiclePos.x + offset.x,
++      y: input.vehiclePos.y + offset.y,
++      z: input.vehiclePos.z + offset.z,
++    };
++    const desiredLook: Vec3 = {
++      x: input.vehiclePos.x + look.x,
++      y: input.vehiclePos.y + look.y,
++      z: input.vehiclePos.z + look.z,
++    };
++
++    // 1 - exp(-k*dt) is time-correct: at any frame rate, the camera approaches
++    // its target with the same time constant 1/k.
++    const alpha = 1 - Math.exp(-this.params.decay * input.dt);
++
++    this.position = {
++      x: this.position.x + (desiredPos.x - this.position.x) * alpha,
++      y: this.position.y + (desiredPos.y - this.position.y) * alpha,
++      z: this.position.z + (desiredPos.z - this.position.z) * alpha,
++    };
++    this.lookAt = {
++      x: this.lookAt.x + (desiredLook.x - this.lookAt.x) * alpha,
++      y: this.lookAt.y + (desiredLook.y - this.lookAt.y) * alpha,
++      z: this.lookAt.z + (desiredLook.z - this.lookAt.z) * alpha,
++    };
++
++    return { position: { ...this.position }, lookAt: { ...this.lookAt } };
++  }
++}
+diff --git a/vehicle-driving-simulator/src/render/index.ts b/vehicle-driving-simulator/src/render/index.ts
+index 85fe13c..7e422c7 100644
+--- a/vehicle-driving-simulator/src/render/index.ts
++++ b/vehicle-driving-simulator/src/render/index.ts
+@@ -1,3 +1,10 @@
++export {
++  type ChaseCameraParams,
++  ChaseCameraState,
++  type ChaseFrame,
++  type ChaseStepInput,
++  DEFAULT_CHASE_PARAMS,
++} from './camera.js';
+ export { FpsCounter } from './fps.js';
+ export {
+   type CreateSceneOptions,
+diff --git a/vehicle-driving-simulator/src/render/scene.ts b/vehicle-driving-simulator/src/render/scene.ts
+index 738132f..05ae2e2 100644
+--- a/vehicle-driving-simulator/src/render/scene.ts
++++ b/vehicle-driving-simulator/src/render/scene.ts
+@@ -1,4 +1,11 @@
+ import * as THREE from 'three';
++import { buildTerrainGeometry, type Heightmap } from '../terrain/index.js';
++import {
++  type ChaseCameraParams,
++  ChaseCameraState,
++  type ChaseStepInput,
++  type Vec3,
++} from './camera.js';
+ 
+ const SKY_COLOR = 0x87ceeb;
+ const GROUND_COLOR = 0x4a7a3a;
+@@ -12,6 +19,7 @@ const VEHICLE_LENGTH = 4.0;
+ 
+ export interface VehicleTransform {
+   readonly x: number;
++  readonly y: number;
+   readonly z: number;
+   readonly heading: number;
+ }
+@@ -24,8 +32,15 @@ export interface SceneHandle {
+   render(): void;
+   resize(width: number, height: number): void;
+   // Read-only sync from vehicle state into the Three.js mesh transform.
+-  // Safe for the renderer to call each frame; SHALL NOT mutate the source.
++  // The caller (app composition) is responsible for sampling the world-space
++  // y from the heightmap; the scene just applies what it's given.
+   updateVehicle(t: VehicleTransform): void;
++  // Advances the chase camera one render frame and applies the result to
++  // the underlying THREE.PerspectiveCamera.
++  updateCamera(input: ChaseStepInput): void;
++  // Snaps the chase camera to its steady-state position for the given vehicle
++  // pose. Useful at bootstrap before any wall-clock dt has been measured.
++  snapCamera(vehiclePos: Vec3, vehicleHeading: number): void;
+   dispose(): void;
+ }
+ 
+@@ -33,6 +48,8 @@ export interface CreateSceneOptions {
+   readonly mount: HTMLElement;
+   readonly width: number;
+   readonly height: number;
++  readonly heightmap: Heightmap;
++  readonly chaseParams?: Partial<ChaseCameraParams>;
+ }
+ 
+ export function createScene(opts: CreateSceneOptions): SceneHandle {
+@@ -46,27 +63,36 @@ export function createScene(opts: CreateSceneOptions): SceneHandle {
+   scene.background = new THREE.Color(SKY_COLOR);
+ 
+   const camera = new THREE.PerspectiveCamera(60, opts.width / opts.height, 0.1, 2000);
+-  camera.position.set(0, 6, 14);
+-  camera.lookAt(0, 1, 0);
++  // Initial position will be overwritten by snapCamera in the app bootstrap;
++  // these defaults are just so the very first render before snapCamera
++  // doesn't show a black screen.
++  camera.position.set(0, 4, -8);
++  camera.lookAt(0, 1, 4);
+ 
+   scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+   const sun = new THREE.DirectionalLight(0xffffff, 0.85);
+   sun.position.set(20, 30, 10);
+   scene.add(sun);
+ 
+-  const groundGeo = new THREE.PlaneGeometry(1000, 1000, 1, 1);
+-  groundGeo.rotateX(-Math.PI / 2);
+-  const groundMat = new THREE.MeshStandardMaterial({ color: GROUND_COLOR, roughness: 1 });
+-  const ground = new THREE.Mesh(groundGeo, groundMat);
+-  ground.position.set(0, 0, 0);
+-  scene.add(ground);
++  // Heightmap-derived terrain mesh replaces R0/R1/R2's flat ground plane.
++  const terrainGeo = buildTerrainGeometry(opts.heightmap);
++  const terrainMat = new THREE.MeshStandardMaterial({
++    color: GROUND_COLOR,
++    roughness: 1,
++    flatShading: false,
++  });
++  const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
++  scene.add(terrainMesh);
+ 
+   const vehicleGeo = new THREE.BoxGeometry(VEHICLE_WIDTH, VEHICLE_HEIGHT, VEHICLE_LENGTH);
+   const vehicleMat = new THREE.MeshStandardMaterial({ color: VEHICLE_COLOR, roughness: 0.6 });
+   const vehicleMesh = new THREE.Mesh(vehicleGeo, vehicleMat);
++  // Initial pose, overwritten on first updateVehicle call.
+   vehicleMesh.position.set(0, VEHICLE_HEIGHT / 2, 0);
+   scene.add(vehicleMesh);
+ 
++  const chase = new ChaseCameraState(opts.chaseParams);
++
+   return {
+     scene,
+     camera,
+@@ -79,15 +105,25 @@ export function createScene(opts: CreateSceneOptions): SceneHandle {
+       camera.updateProjectionMatrix();
+     },
+     updateVehicle: (t: VehicleTransform) => {
+-      vehicleMesh.position.set(t.x, VEHICLE_HEIGHT / 2, t.z);
++      vehicleMesh.position.set(t.x, t.y, t.z);
+       // heading is CCW positive when viewed from +Y, which corresponds to a
+       // -Y axis rotation in the right-handed Three.js convention.
+       vehicleMesh.rotation.set(0, -t.heading, 0);
+     },
++    updateCamera: (input: ChaseStepInput) => {
++      const frame = chase.step(input);
++      camera.position.set(frame.position.x, frame.position.y, frame.position.z);
++      camera.lookAt(frame.lookAt.x, frame.lookAt.y, frame.lookAt.z);
++    },
++    snapCamera: (vehiclePos: Vec3, vehicleHeading: number) => {
++      chase.snap(vehiclePos, vehicleHeading);
++      camera.position.set(chase.position.x, chase.position.y, chase.position.z);
++      camera.lookAt(chase.lookAt.x, chase.lookAt.y, chase.lookAt.z);
++    },
+     dispose: () => {
+       renderer.dispose();
+-      groundGeo.dispose();
+-      groundMat.dispose();
++      terrainGeo.dispose();
++      terrainMat.dispose();
+       vehicleGeo.dispose();
+       vehicleMat.dispose();
+       if (renderer.domElement.parentElement === opts.mount) {
+diff --git a/vehicle-driving-simulator/src/terrain/heightmap.test.ts b/vehicle-driving-simulator/src/terrain/heightmap.test.ts
+new file mode 100644
+index 0000000..2125571
+--- /dev/null
++++ b/vehicle-driving-simulator/src/terrain/heightmap.test.ts
+@@ -0,0 +1,114 @@
++import { describe, expect, it } from 'vitest';
++import { Heightmap } from './heightmap.js';
++
++describe('Heightmap — heightAt', () => {
++  const h = new Heightmap();
++
++  it('is a pure function (same input → same output)', () => {
++    const samples: [number, number][] = [
++      [0, 0],
++      [12.5, -7.3],
++      [-50, 50],
++      [99.9, 0.1],
++    ];
++    for (const [x, z] of samples) {
++      const a = h.heightAt(x, z);
++      const b = h.heightAt(x, z);
++      expect(a).toBe(b);
++    }
++  });
++
++  it('returns finite, bounded heights over the rendered region', () => {
++    let max = 0;
++    // Sample a 41×41 grid over the rendered ±100 m region.
++    for (let i = 0; i <= 40; i += 1) {
++      for (let j = 0; j <= 40; j += 1) {
++        const x = -100 + i * 5;
++        const z = -100 + j * 5;
++        const y = h.heightAt(x, z);
++        expect(Number.isFinite(y)).toBe(true);
++        if (Math.abs(y) > max) max = Math.abs(y);
++      }
++    }
++    expect(max).toBeLessThanOrEqual(6);
++  });
++
++  it('is non-trivial (not constant)', () => {
++    const a = h.heightAt(0, 0);
++    const b = h.heightAt(30, 0);
++    const c = h.heightAt(0, 30);
++    expect(a).not.toBe(b);
++    expect(a).not.toBe(c);
++  });
++});
++
++describe('Heightmap — normalAt', () => {
++  const h = new Heightmap();
++
++  it('returns a unit vector (magnitude = 1) at multiple sample points', () => {
++    const samples: [number, number][] = [
++      [0, 0],
++      [12.5, -7.3],
++      [-50, 50],
++      [99.9, 0.1],
++      [3.14, 2.71],
++    ];
++    for (const [x, z] of samples) {
++      const n = h.normalAt(x, z);
++      const mag = Math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
++      expect(Math.abs(mag - 1)).toBeLessThan(1e-12);
++      expect(n.y).toBeGreaterThan(0); // points up
++    }
++  });
++
++  it('agrees with a numerical finite-difference normal', () => {
++    const eps = 1e-4;
++    const samples: [number, number][] = [
++      [0, 0],
++      [12.5, -7.3],
++      [-50, 50],
++    ];
++    for (const [x, z] of samples) {
++      const dhdxNumeric = (h.heightAt(x + eps, z) - h.heightAt(x - eps, z)) / (2 * eps);
++      const dhdzNumeric = (h.heightAt(x, z + eps) - h.heightAt(x, z - eps)) / (2 * eps);
++      const lenNumeric = Math.sqrt(dhdxNumeric * dhdxNumeric + 1 + dhdzNumeric * dhdzNumeric);
++      const numericNormal = {
++        x: -dhdxNumeric / lenNumeric,
++        y: 1 / lenNumeric,
++        z: -dhdzNumeric / lenNumeric,
++      };
++      const analytic = h.normalAt(x, z);
++      expect(Math.abs(analytic.x - numericNormal.x)).toBeLessThan(1e-6);
++      expect(Math.abs(analytic.y - numericNormal.y)).toBeLessThan(1e-6);
++      expect(Math.abs(analytic.z - numericNormal.z)).toBeLessThan(1e-6);
++    }
++  });
++});
++
++describe('Heightmap — partial derivatives', () => {
++  const h = new Heightmap();
++
++  it('partialX matches a central-difference numerical derivative', () => {
++    const eps = 1e-4;
++    for (const [x, z] of [
++      [10, 5],
++      [-25, 15],
++    ] as [number, number][]) {
++      const numeric = (h.heightAt(x + eps, z) - h.heightAt(x - eps, z)) / (2 * eps);
++      const analytic = h.partialX(x, z);
++      expect(Math.abs(numeric - analytic)).toBeLessThan(1e-6);
++    }
++  });
++
++  it('partialZ matches a central-difference numerical derivative', () => {
++    const eps = 1e-4;
++    for (const [x, z] of [
++      [10, 5],
++      [-25, 15],
++    ] as [number, number][]) {
++      const numeric = (h.heightAt(x, z + eps) - h.heightAt(x, z - eps)) / (2 * eps);
++      const analytic = h.partialZ(x, z);
++      expect(Math.abs(numeric - analytic)).toBeLessThan(1e-6);
++    }
++  });
++});
+diff --git a/vehicle-driving-simulator/src/terrain/heightmap.ts b/vehicle-driving-simulator/src/terrain/heightmap.ts
+new file mode 100644
+index 0000000..e142c72
+--- /dev/null
++++ b/vehicle-driving-simulator/src/terrain/heightmap.ts
+@@ -0,0 +1,88 @@
++// Procedural heightmap defined by a sum of three sine bands. Pure function of
++// (x, z) — no random calls, no caching, no platform-specific FP behavior, so
++// two runs on the same lockfile produce identical heights.
++//
++// Phase offsets (1.7, -0.5, 2.3, 1.1) are arbitrary and only break the
++// symmetry that pure sin*cos products would have. They are part of the spec.
++
++export interface HeightmapParams {
++  readonly aLarge: number;
++  readonly lLarge: number;
++  readonly aMed: number;
++  readonly lMed: number;
++  readonly aSmall: number;
++  readonly lSmall: number;
++}
++
++export const DEFAULT_HEIGHTMAP_PARAMS: HeightmapParams = Object.freeze({
++  aLarge: 4,
++  lLarge: 60,
++  aMed: 1.5,
++  lMed: 18,
++  aSmall: 0.4,
++  lSmall: 6,
++});
++
++// Phase offsets are baked-in constants, not params, because changing them
++// changes the world; a different choice would be a different heightmap.
++const PHASE_MED_X = 1.7;
++const PHASE_MED_Z = -0.5;
++const PHASE_SMALL_X = 2.3;
++const PHASE_SMALL_Z = 1.1;
++
++export interface Vec3 {
++  readonly x: number;
++  readonly y: number;
++  readonly z: number;
++}
++
++export class Heightmap {
++  readonly params: HeightmapParams;
++
++  constructor(params: Partial<HeightmapParams> = {}) {
++    this.params = { ...DEFAULT_HEIGHTMAP_PARAMS, ...params };
++  }
++
++  heightAt(x: number, z: number): number {
++    const p = this.params;
++    return (
++      p.aLarge * Math.sin(x / p.lLarge) * Math.cos(z / p.lLarge) +
++      p.aMed * Math.sin(x / p.lMed + PHASE_MED_X) * Math.cos(z / p.lMed + PHASE_MED_Z) +
++      p.aSmall * Math.sin(x / p.lSmall + PHASE_SMALL_X) * Math.cos(z / p.lSmall + PHASE_SMALL_Z)
++    );
++  }
++
++  // Closed-form ∂h/∂x. Each term contributes via the chain rule on sin(x/L).
++  partialX(x: number, z: number): number {
++    const p = this.params;
++    return (
++      (p.aLarge / p.lLarge) * Math.cos(x / p.lLarge) * Math.cos(z / p.lLarge) +
++      (p.aMed / p.lMed) * Math.cos(x / p.lMed + PHASE_MED_X) * Math.cos(z / p.lMed + PHASE_MED_Z) +
++      (p.aSmall / p.lSmall) *
++        Math.cos(x / p.lSmall + PHASE_SMALL_X) *
++        Math.cos(z / p.lSmall + PHASE_SMALL_Z)
++    );
++  }
++
++  // Closed-form ∂h/∂z. cos(z/L) differentiates to -sin(z/L)/L, hence the minus.
++  partialZ(x: number, z: number): number {
++    const p = this.params;
++    return (
++      -(p.aLarge / p.lLarge) * Math.sin(x / p.lLarge) * Math.sin(z / p.lLarge) -
++      (p.aMed / p.lMed) * Math.sin(x / p.lMed + PHASE_MED_X) * Math.sin(z / p.lMed + PHASE_MED_Z) -
++      (p.aSmall / p.lSmall) *
++        Math.sin(x / p.lSmall + PHASE_SMALL_X) *
++        Math.sin(z / p.lSmall + PHASE_SMALL_Z)
++    );
++  }
++
++  // The +Y-pointing surface normal is normalize(T_z × T_x) where
++  // T_x = (1, ∂h/∂x, 0) and T_z = (0, ∂h/∂z, 1). The cross product expands
++  // to (-∂h/∂x, 1, -∂h/∂z); normalizing gives a unit vector with positive y.
++  normalAt(x: number, z: number): Vec3 {
++    const hx = this.partialX(x, z);
++    const hz = this.partialZ(x, z);
++    const len = Math.sqrt(hx * hx + 1 + hz * hz);
++    return { x: -hx / len, y: 1 / len, z: -hz / len };
++  }
++}
+diff --git a/vehicle-driving-simulator/src/terrain/index.ts b/vehicle-driving-simulator/src/terrain/index.ts
+new file mode 100644
+index 0000000..c197f3c
+--- /dev/null
++++ b/vehicle-driving-simulator/src/terrain/index.ts
+@@ -0,0 +1,12 @@
++export {
++  DEFAULT_HEIGHTMAP_PARAMS,
++  Heightmap,
++  type HeightmapParams,
++  type Vec3,
++} from './heightmap.js';
++export {
++  type BuildTerrainOptions,
++  buildTerrainGeometry,
++  DEFAULT_TERRAIN_SEGMENTS,
++  DEFAULT_TERRAIN_SIZE,
++} from './mesh.js';
+diff --git a/vehicle-driving-simulator/src/terrain/mesh.test.ts b/vehicle-driving-simulator/src/terrain/mesh.test.ts
+new file mode 100644
+index 0000000..443b4a5
+--- /dev/null
++++ b/vehicle-driving-simulator/src/terrain/mesh.test.ts
+@@ -0,0 +1,60 @@
++import { describe, expect, it } from 'vitest';
++import { Heightmap } from './heightmap.js';
++import { buildTerrainGeometry } from './mesh.js';
++
++describe('buildTerrainGeometry', () => {
++  it('produces (segments+1)² vertex positions', () => {
++    const h = new Heightmap();
++    const segments = 64;
++    const geo = buildTerrainGeometry(h, { segments });
++    const expectedCount = (segments + 1) ** 2;
++    const positions = geo.getAttribute('position') as { count: number };
++    expect(positions.count).toBe(expectedCount);
++  });
++
++  it('produces segments² * 6 triangle index entries', () => {
++    const h = new Heightmap();
++    const segments = 32;
++    const geo = buildTerrainGeometry(h, { segments });
++    const index = geo.getIndex();
++    expect(index).not.toBeNull();
++    expect(index!.count).toBe(segments * segments * 2 * 3);
++  });
++
++  it('contains no NaN or Infinity vertex positions', () => {
++    const h = new Heightmap();
++    const geo = buildTerrainGeometry(h, { segments: 16, size: 100 });
++    const positions = geo.getAttribute('position') as { array: ArrayLike<number>; count: number };
++    for (let i = 0; i < positions.count * 3; i += 1) {
++      expect(Number.isFinite(positions.array[i])).toBe(true);
++    }
++  });
++
++  it('vertex y values match heightmap.heightAt at the grid points', () => {
++    const h = new Heightmap();
++    const segments = 8;
++    const size = 80;
++    const geo = buildTerrainGeometry(h, { segments, size });
++    const positions = geo.getAttribute('position') as { array: ArrayLike<number> };
++    const verts = segments + 1;
++    const cell = size / segments;
++    const half = size / 2;
++    for (let i = 0; i <= segments; i += 1) {
++      for (let j = 0; j <= segments; j += 1) {
++        const idx = (i * verts + j) * 3;
++        const x = -half + j * cell;
++        const z = -half + i * cell;
++        expect(positions.array[idx]).toBeCloseTo(x, 5);
++        expect(positions.array[idx + 1]).toBeCloseTo(h.heightAt(x, z), 5);
++        expect(positions.array[idx + 2]).toBeCloseTo(z, 5);
++      }
++    }
++  });
++
++  it('rejects invalid segments', () => {
++    const h = new Heightmap();
++    expect(() => buildTerrainGeometry(h, { segments: 0 })).toThrow();
++    expect(() => buildTerrainGeometry(h, { segments: 1.5 })).toThrow();
++    expect(() => buildTerrainGeometry(h, { segments: -4 })).toThrow();
++  });
++});
+diff --git a/vehicle-driving-simulator/src/terrain/mesh.ts b/vehicle-driving-simulator/src/terrain/mesh.ts
+new file mode 100644
+index 0000000..e7f2328
+--- /dev/null
++++ b/vehicle-driving-simulator/src/terrain/mesh.ts
+@@ -0,0 +1,60 @@
++import * as THREE from 'three';
++import type { Heightmap } from './heightmap.js';
++
++export interface BuildTerrainOptions {
++  readonly size?: number; // total side length (m)
++  readonly segments?: number; // cells per side; vertices = (segments+1)²
++}
++
++export const DEFAULT_TERRAIN_SIZE = 200;
++export const DEFAULT_TERRAIN_SEGMENTS = 128;
++
++// Builds a heightmap-shaped BufferGeometry centered on the origin. Vertices
++// are sampled from heightmap.heightAt at a regular (segments+1)² grid.
++// Triangulation: each cell is split into two triangles (a-c-b, b-c-d) using
++// the canonical clockwise-when-viewed-from-+Y winding so face normals point up.
++export function buildTerrainGeometry(
++  heightmap: Heightmap,
++  opts: BuildTerrainOptions = {},
++): THREE.BufferGeometry {
++  const size = opts.size ?? DEFAULT_TERRAIN_SIZE;
++  const segments = opts.segments ?? DEFAULT_TERRAIN_SEGMENTS;
++  if (segments < 1 || !Number.isInteger(segments)) {
++    throw new Error(`buildTerrainGeometry: segments must be a positive integer (got ${segments})`);
++  }
++
++  const verts = segments + 1;
++  const positions = new Float32Array(verts * verts * 3);
++  const half = size / 2;
++  const cell = size / segments;
++
++  for (let i = 0; i <= segments; i += 1) {
++    for (let j = 0; j <= segments; j += 1) {
++      const x = -half + j * cell;
++      const z = -half + i * cell;
++      const y = heightmap.heightAt(x, z);
++      const idx = (i * verts + j) * 3;
++      positions[idx] = x;
++      positions[idx + 1] = y;
++      positions[idx + 2] = z;
++    }
++  }
++
++  const indices: number[] = [];
++  for (let i = 0; i < segments; i += 1) {
++    for (let j = 0; j < segments; j += 1) {
++      const a = i * verts + j;
++      const b = a + 1;
++      const c = a + verts;
++      const d = c + 1;
++      // Two triangles per cell. Winding chosen so computeVertexNormals points +Y.
++      indices.push(a, c, b, b, c, d);
++    }
++  }
++
++  const geometry = new THREE.BufferGeometry();
++  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
++  geometry.setIndex(indices);
++  geometry.computeVertexNormals();
++  return geometry;
++}

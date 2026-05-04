@@ -1,0 +1,56 @@
+{
+  "rung": "R3",
+  "change": "terrain-and-camera",
+  "tool": "claude-code",
+  "model": "claude-opus-4-7[1m]",
+  "attemptId": "2026-05-04-a",
+  "startedAt": "2026-05-04T16:00:00Z",
+  "endedAt": "2026-05-04T16:15:00Z",
+  "wallClockSeconds": 900,
+  "humanInterventions": 0,
+  "tokens": {
+    "total": 90000,
+    "kind": "estimated",
+    "basis": "Same continuous session as R0/R1/R2/Pages work; the user reported ~37% session usage after R2, and R3 (spec + implementation + eval) consumed roughly an additional ~9% of session limits. At ~10k tokens/% (the rate established by R0+R1's 280k/28%), R3 ≈ 90k tokens. R3 had no test self-correction rounds — first-pass green on all 5 gates."
+  },
+  "checks": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "test": "pass",
+    "e2e": "pass",
+    "build": "pass",
+    "rungSpecific": "pass"
+  },
+  "outcome": "passed",
+  "linesAdded": 638,
+  "linesRemoved": 17,
+  "filesTouched": 10,
+  "baselineCommit": "bc9553e",
+  "baselineTag": "r3-baseline",
+  "resultCommit": "ca1e8ca",
+  "resultTag": "r3-complete",
+  "lockfileSha256": "3A286289BBD94944A567647037D76ED53D7EC1B43F74C5B19D7693D972005C7D",
+  "tests": {
+    "unitFiles": 12,
+    "unitTests": 67,
+    "e2eTests": 2
+  },
+  "host": {
+    "platform": "win32",
+    "osVersion": "Windows 11 Home 10.0.26200",
+    "node": "v24.15.0",
+    "npm": "11.12.1"
+  },
+  "deps": {
+    "vite": "8.0.10",
+    "vitest": "4.1.5",
+    "typescript": "5.9.3",
+    "three": "0.184.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1"
+  },
+  "caveats": [
+    "Same agent wrote and implemented the R3 spec; not a clean cross-tool comparison."
+  ]
+}
