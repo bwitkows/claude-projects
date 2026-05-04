@@ -1,76 +1,21 @@
-# Vehicle Driving Simulator (and AI tool benchmark)
+# claude-projects
 
-A high-fidelity 3D vehicle driving simulator that runs in the browser.
+A collection of projects designed as benchmarks for evaluating AI coding tools (Claude Code, Cursor, Cline, Codex, etc.). Each subdirectory is one project; each is structured so the same task can be handed to multiple tools and the results compared objectively.
 
-This repository serves a dual purpose:
+See the per-project README for project-specific details and the per-project `MEASUREMENT.md` for evaluation methodology.
 
-1. **The simulator.** Three.js + Rapier, TypeScript. The vehicle dynamics climb a fidelity ladder from a kinematic toy through bicycle, four-wheel raycast, linear-tire, Pacejka-tire, and suspension models.
-2. **A benchmark for AI coding tools.** Each rung is delivered as one OpenSpec change. The same change can be handed to different AI tools; tests, telemetry, and methodology are designed so runs are objectively comparable.
+## Projects
 
-See `MEASUREMENT.md` for evaluation methodology and `openspec/changes/` for proposed and active changes.
+| Directory | Description |
+|-----------|-------------|
+| [`vehicle-driving-simulator/`](./vehicle-driving-simulator/) | A high-fidelity 3D vehicle driving simulator built incrementally as an AI-eval ladder (kinematic → bicycle → 4-wheel → Pacejka tire models). Three.js + Rapier + TypeScript, browser-native. |
 
-## Stack
+## Methodology (general)
 
-- TypeScript (strict)
-- Vite
-- Three.js (rendering)
-- Rapier (`@dimforge/rapier3d-compat`) for rigid body physics, enhanced-determinism mode
-- Vitest (unit + integration)
-- Playwright (e2e smoke)
-- Biome (lint + format)
-- GitHub Actions (CI)
+Each project ships its own `MEASUREMENT.md` defining what counts as pass/fail, what artifacts are captured per run, and fairness rules. The methodology may differ per project but follows a common shape: discrete OpenSpec changes as work units, deterministic baselines, math-based or otherwise objective acceptance criteria, structured per-run artifacts under `evals/`.
 
-All dependency versions are pinned exactly. Eval reproducibility requires the toolchain to be deterministic.
+## Branching
 
-## Quickstart
+`main` advances only when work has passed its eval criteria. `dev` is where AI agents run; reset to `main` between tool comparisons so each tool starts from the same baseline.
 
-```
-npm install
-npm run dev        # http://localhost:5173
-```
-
-Other scripts:
-
-```
-npm run build      # production bundle
-npm run typecheck
-npm run lint
-npm test           # vitest
-npm run e2e        # playwright
-```
-
-## Rung ladder
-
-| Rung | Change                  | What it adds                                                  |
-|------|-------------------------|---------------------------------------------------------------|
-| R0   | `project-bootstrap`     | Sim core, rendering, telemetry, input, CI                     |
-| R1   | `kinematic-vehicle`     | Box that drives via velocity + steering                       |
-| R2   | `bicycle-model`         | Slip-angle dynamics, lateral force                            |
-| R3   | `terrain-and-camera`    | Heightmap world, chase camera                                 |
-| R4   | `four-wheel-raycast`    | Per-wheel ground contact, weight transfer                     |
-| R5   | `linear-tire-model`     | Slip-angle → lateral force in the linear regime               |
-| R6   | `pacejka-tire-model`    | Saturating tire forces; controlled drift achievable           |
-| R7   | `suspension-dynamics`   | Spring/damper per wheel; pitch and roll observable            |
-| R8   | `telemetry-and-replay`  | Deterministic replay; regression tests over recorded runs     |
-
-Each rung adds requirements; it does not throw away earlier code.
-
-## Project layout
-
-```
-src/
-  sim/         simulation-core (loop, clock, deterministic step API)
-  physics/     Rapier wrapper, world, body factories
-  vehicle/     vehicle dynamics (introduced in R1; swappable models)
-  render/      Three.js scene, camera, lights, ground, FPS overlay
-  telemetry/   ring buffer, recorder, CSV exporter
-  input/       keyboard adapter, synthetic source, control event emitter
-  app/         composition root; only place that wires multiple modules
-  main.ts      entry point
-
-openspec/
-  changes/     proposed and active changes (each rung)
-  specs/       long-lived capability specs (populated on archive)
-
-evals/         per-rung-per-tool evaluation artifacts (see MEASUREMENT.md)
-```
+A worktree of `dev` lives at `../projects-dev/` (sibling of this repo's main worktree).
