@@ -1,0 +1,57 @@
+{
+  "rung": "R4",
+  "change": "four-wheel-raycast",
+  "tool": "claude-code",
+  "model": "claude-opus-4-7[1m]",
+  "attemptId": "2026-05-04-a",
+  "startedAt": "2026-05-04T16:25:00Z",
+  "endedAt": "2026-05-04T16:55:00Z",
+  "wallClockSeconds": 1800,
+  "humanInterventions": 0,
+  "tokens": {
+    "total": 160000,
+    "kind": "estimated",
+    "basis": "Largest implementation rung yet — Rapier integration plus per-wheel mechanics. Pre-flight inspection of rapier3d-compat .d.ts files to verify trimesh/raycast/setEnabledRotations APIs, plus one diagnostic round to find the resetForces requirement (Rapier accumulates user forces persistently across world.step calls). At ~10k tokens/% (R0/R1 baseline rate), R4 ≈ 160k. The session was at ~46% used after R3+overlay; R4 likely pushes it to ~62%."
+  },
+  "checks": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "test": "pass",
+    "e2e": "pass",
+    "build": "pass",
+    "rungSpecific": "pass"
+  },
+  "outcome": "passed",
+  "linesAdded": 919,
+  "linesRemoved": 29,
+  "filesTouched": 8,
+  "baselineCommit": "0ef0a9a",
+  "baselineTag": "r4-baseline",
+  "resultCommit": "f99c1bd",
+  "resultTag": "r4-complete",
+  "lockfileSha256": "3A286289BBD94944A567647037D76ED53D7EC1B43F74C5B19D7693D972005C7D",
+  "tests": {
+    "unitFiles": 14,
+    "unitTests": 81,
+    "e2eTests": 2
+  },
+  "host": {
+    "platform": "win32",
+    "osVersion": "Windows 11 Home 10.0.26200",
+    "node": "v24.15.0",
+    "npm": "11.12.1"
+  },
+  "deps": {
+    "vite": "8.0.10",
+    "vitest": "4.1.5",
+    "typescript": "5.9.3",
+    "three": "0.184.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1"
+  },
+  "caveats": [
+    "Same agent wrote and implemented the R4 spec; not a clean cross-tool comparison.",
+    "Spec said to attach a cuboid Rapier collider to the chassis; implementation skipped the collider and used setAdditionalMassProperties directly. Rationale: a cuboid colliding with the trimesh terrain would generate contact responses that fight our manual Y management. Documented in code."
+  ]
+}
