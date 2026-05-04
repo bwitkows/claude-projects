@@ -1,0 +1,56 @@
+{
+  "rung": "R6",
+  "change": "pacejka-tire-model",
+  "tool": "claude-code",
+  "model": "claude-opus-4-7[1m]",
+  "attemptId": "2026-05-04-a",
+  "startedAt": "2026-05-04T17:30:00Z",
+  "endedAt": "2026-05-04T17:42:00Z",
+  "wallClockSeconds": 720,
+  "humanInterventions": 0,
+  "tokens": {
+    "total": 50000,
+    "kind": "estimated",
+    "basis": "Smallest implementation rung yet — TireModel seam from R5 was the right shape; R6 is just a new class + a one-line default swap. One self-correction round on the slope test (rounded B=7.77 vs exact B=10.1/1.3 → relative error 1e-4 instead of 1e-9; fixed by deriving B from cα/(μ·C)). At ~10k tokens/% (R0+R1 baseline rate), R6 ≈ 50k. Session pre-R6 was at ~69%; post-R6 likely ~74%."
+  },
+  "checks": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "test": "pass",
+    "e2e": "pass",
+    "build": "pass",
+    "rungSpecific": "pass"
+  },
+  "outcome": "passed",
+  "linesAdded": 138,
+  "linesRemoved": 6,
+  "filesTouched": 4,
+  "baselineCommit": "2ea61fc",
+  "baselineTag": "r6-baseline",
+  "resultCommit": "dcc3e36",
+  "resultTag": "r6-complete",
+  "lockfileSha256": "3A286289BBD94944A567647037D76ED53D7EC1B43F74C5B19D7693D972005C7D",
+  "tests": {
+    "unitFiles": 15,
+    "unitTests": 97,
+    "e2eTests": 2
+  },
+  "host": {
+    "platform": "win32",
+    "osVersion": "Windows 11 Home 10.0.26200",
+    "node": "v24.15.0",
+    "npm": "11.12.1"
+  },
+  "deps": {
+    "vite": "8.0.10",
+    "vitest": "4.1.5",
+    "typescript": "5.9.3",
+    "three": "0.184.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1"
+  },
+  "caveats": [
+    "Same agent wrote and implemented the R6 spec; not a clean cross-tool comparison."
+  ]
+}
