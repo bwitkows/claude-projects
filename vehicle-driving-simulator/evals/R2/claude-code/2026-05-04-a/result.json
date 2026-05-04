@@ -1,0 +1,58 @@
+{
+  "rung": "R2",
+  "change": "bicycle-model",
+  "tool": "claude-code",
+  "model": "claude-opus-4-7[1m]",
+  "attemptId": "2026-05-04-a",
+  "startedAt": "2026-05-04T15:25:00Z",
+  "endedAt": "2026-05-04T15:45:00Z",
+  "wallClockSeconds": 1200,
+  "humanInterventions": 0,
+  "tokens": {
+    "total": 80000,
+    "kind": "estimated",
+    "basis": "Same continuous session as R0/R1/Pages work; ~28% of session limits had been used through R1 + Pages, with R2 (spec + implementation) consuming an additional ~8% of limits. Estimated 80k tokens total. Includes one self-correction round on test failures (cornering convergence at automotive params) — see notes.md."
+  },
+  "checks": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "test": "pass",
+    "e2e": "pass",
+    "build": "pass",
+    "rungSpecific": "pass-with-caveat"
+  },
+  "outcome": "passed",
+  "linesAdded": 443,
+  "linesRemoved": 6,
+  "filesTouched": 5,
+  "baselineCommit": "8b838fa",
+  "baselineTag": "r2-baseline",
+  "resultCommit": "beb3204",
+  "resultTag": "r2-complete",
+  "lockfileSha256": "3A286289BBD94944A567647037D76ED53D7EC1B43F74C5B19D7693D972005C7D",
+  "tests": {
+    "unitFiles": 9,
+    "unitTests": 49,
+    "e2eTests": 2
+  },
+  "host": {
+    "platform": "win32",
+    "osVersion": "Windows 11 Home 10.0.26200",
+    "node": "v24.15.0",
+    "npm": "11.12.1"
+  },
+  "deps": {
+    "vite": "8.0.10",
+    "vitest": "4.1.5",
+    "typescript": "5.9.3",
+    "three": "0.184.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1"
+  },
+  "caveats": [
+    "Same agent wrote and implemented the R2 spec; not a clean cross-tool comparison.",
+    "Self-spec defect: scenario 'Yaw rate stabilizes under constant inputs' specified 5% range/mean over the final second after 5 simulated seconds at throttle=0.5 from rest. With automotive params (m=1500, fDrive=9000, vMax=25), the longitudinal time constant m/dragCoef = 4.17 s; at 5 s vx is at ~70% of steady state and yaw rate is still climbing. The test was loosened to 30% (achievable) plus a bonus test that verifies the strict 5% IS achievable at 20 simulated seconds (~5 time constants).",
+    "Design-doc deviation: design.md said 'DRAG_DECEL = 0.5 m/s² (matches R1)' for backward compatibility with R1's coast model, but R1's constant drag has no force balance below vMax — partial throttle would never converge. Implementation switched to linear drag F_drag = dragCoef * vx (with dragCoef = fDrive/vMax = 360 N·s/m so full throttle saturates exactly at vMax). KinematicVehicle keeps R1's constant-drag model unchanged."
+  ]
+}
