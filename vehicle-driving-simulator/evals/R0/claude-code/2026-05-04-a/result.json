@@ -1,0 +1,41 @@
+{
+  "rung": "R0",
+  "change": "project-bootstrap",
+  "tool": "claude-code",
+  "model": "claude-opus-4-7[1m]",
+  "attemptId": "2026-05-04-a",
+  "startedAt": "2026-05-04T13:30:00Z",
+  "endedAt": "2026-05-04T13:55:00Z",
+  "wallClockSeconds": 1500,
+  "humanInterventions": 0,
+  "checks": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "test": "pass",
+    "e2e": "pass",
+    "build": "pass",
+    "rungSpecific": "pass"
+  },
+  "outcome": "passed",
+  "linesAdded": 3463,
+  "linesRemoved": 0,
+  "filesTouched": 38,
+  "baselineCommit": "3df1ac7",
+  "resultCommit": "dd0668b",
+  "lockfileSha256": "3A286289BBD94944A567647037D76ED53D7EC1B43F74C5B19D7693D972005C7D",
+  "host": {
+    "platform": "win32",
+    "osVersion": "Windows 11 Home 10.0.26200",
+    "node": "v24.15.0",
+    "npm": "11.12.1"
+  },
+  "deps": {
+    "vite": "8.0.10",
+    "vitest": "4.1.5",
+    "typescript": "5.9.3",
+    "three": "0.184.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1"
+  }
+}
