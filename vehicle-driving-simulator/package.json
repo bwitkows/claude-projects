@@ -1,0 +1,31 @@
+{
+  "name": "vehicle-driving-simulator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "three": "0.184.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1",
+    "@types/node": "24.12.2",
+    "@types/three": "0.184.0",
+    "jsdom": "29.1.1",
+    "typescript": "5.9.3",
+    "vite": "8.0.10",
+    "vitest": "4.1.5"
+  }
+}
