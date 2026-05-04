@@ -2,6 +2,19 @@ import * as THREE from 'three';
 
 const SKY_COLOR = 0x87ceeb;
 const GROUND_COLOR = 0x4a7a3a;
+const VEHICLE_COLOR = 0xff5544;
+
+// Vehicle box dimensions (m): width × height × length. Length aligned with +Z
+// at heading=0, matching the kinematic model's coordinate convention.
+const VEHICLE_WIDTH = 1.8;
+const VEHICLE_HEIGHT = 1.0;
+const VEHICLE_LENGTH = 4.0;
+
+export interface VehicleTransform {
+  readonly x: number;
+  readonly z: number;
+  readonly heading: number;
+}
 
 export interface SceneHandle {
   readonly scene: THREE.Scene;
@@ -10,6 +23,9 @@ export interface SceneHandle {
   readonly canvas: HTMLCanvasElement;
   render(): void;
   resize(width: number, height: number): void;
+  // Read-only sync from vehicle state into the Three.js mesh transform.
+  // Safe for the renderer to call each frame; SHALL NOT mutate the source.
+  updateVehicle(t: VehicleTransform): void;
   dispose(): void;
 }
 
@@ -45,13 +61,11 @@ export function createScene(opts: CreateSceneOptions): SceneHandle {
   ground.position.set(0, 0, 0);
   scene.add(ground);
 
-  // Visual reference origin marker so the scene is not visually empty in R0.
-  const marker = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.5, 0.5),
-    new THREE.MeshStandardMaterial({ color: 0xff5544 }),
-  );
-  marker.position.set(0, 0.25, 0);
-  scene.add(marker);
+  const vehicleGeo = new THREE.BoxGeometry(VEHICLE_WIDTH, VEHICLE_HEIGHT, VEHICLE_LENGTH);
+  const vehicleMat = new THREE.MeshStandardMaterial({ color: VEHICLE_COLOR, roughness: 0.6 });
+  const vehicleMesh = new THREE.Mesh(vehicleGeo, vehicleMat);
+  vehicleMesh.position.set(0, VEHICLE_HEIGHT / 2, 0);
+  scene.add(vehicleMesh);
 
   return {
     scene,
@@ -64,12 +78,18 @@ export function createScene(opts: CreateSceneOptions): SceneHandle {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     },
+    updateVehicle: (t: VehicleTransform) => {
+      vehicleMesh.position.set(t.x, VEHICLE_HEIGHT / 2, t.z);
+      // heading is CCW positive when viewed from +Y, which corresponds to a
+      // -Y axis rotation in the right-handed Three.js convention.
+      vehicleMesh.rotation.set(0, -t.heading, 0);
+    },
     dispose: () => {
       renderer.dispose();
       groundGeo.dispose();
       groundMat.dispose();
-      marker.geometry.dispose();
-      (marker.material as THREE.Material).dispose();
+      vehicleGeo.dispose();
+      vehicleMat.dispose();
       if (renderer.domElement.parentElement === opts.mount) {
         opts.mount.removeChild(renderer.domElement);
       }

@@ -1,8 +1,9 @@
-import { type ControlState, type InputSource, KeyboardInputSource } from '../input/index.js';
+import { type InputSource, KeyboardInputSource } from '../input/index.js';
 import { createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
 import { createScene, FpsCounter, type SceneHandle } from '../render/index.js';
 import { FixedStepLoop, SimClock } from '../sim/index.js';
 import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
+import { KinematicVehicle, type VehicleModel } from '../vehicle/index.js';
 
 export interface AppHandle {
   readonly loop: FixedStepLoop;
@@ -10,6 +11,7 @@ export interface AppHandle {
   readonly physics: PhysicsWorld;
   readonly telemetry: TelemetryBuffer;
   readonly input: InputSource;
+  readonly vehicle: VehicleModel;
   start(): void;
   stop(): void;
   dispose(): void;
@@ -30,20 +32,32 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
   const fps = new FpsCounter(opts.fpsElement);
   const telemetry = new TelemetryBuffer();
   const input = new KeyboardInputSource();
+  const vehicle = new KinematicVehicle();
   const clock = new SimClock();
 
-  // The sim core is the single owner of physics stepping; the renderer reads
-  // state from physics but never advances it.
+  // Sim ordering per spec: input is sampled once before integration; then the
+  // vehicle is stepped; then Rapier (still present from R0 — the kinematic
+  // vehicle does not interact with it but the world is part of the scaffold);
+  // then telemetry is recorded with post-step vehicle state.
   const loop = new FixedStepLoop({
     clock,
     onStep: (s) => {
-      // Sample input exactly once per step, before integration.
-      const _control: ControlState = input.read(s.time);
-      void _control; // R0 has no vehicle; control is read for spec compliance.
+      const control = input.read(s.time);
+      vehicle.step(s.dt, control);
       physics.step();
-      telemetry.push({ t: s.time, step: s.step });
+      const v = vehicle.state;
+      telemetry.push({
+        t: s.time,
+        step: s.step,
+        x: v.x,
+        z: v.z,
+        heading: v.heading,
+        speed: v.speed,
+      });
     },
     onRender: () => {
+      const v = vehicle.state;
+      scene.updateVehicle({ x: v.x, z: v.z, heading: v.heading });
       scene.render();
       fps.tick();
     },
@@ -62,6 +76,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
     physics,
     telemetry,
     input,
+    vehicle,
     start: () => loop.run(),
     stop: () => loop.stop(),
     dispose: () => {
