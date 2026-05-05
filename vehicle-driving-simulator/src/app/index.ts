@@ -88,6 +88,10 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
         fz_fr: w.fr.fz,
         fz_rl: w.rl.fz,
         fz_rr: w.rr.fz,
+        c_fl: w.fl.compression,
+        c_fr: w.fr.compression,
+        c_rl: w.rl.compression,
+        c_rr: w.rr.compression,
       });
     },
     onRender: () => {

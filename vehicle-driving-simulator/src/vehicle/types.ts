@@ -51,17 +51,21 @@ export const NEUTRAL_BICYCLE_STATE: BicycleVehicleState = Object.freeze({
 });
 
 // Per-wheel state populated by R4's FourWheelVehicle, extended in R5 with
-// the per-wheel slip angle. `position` is the wheel hardpoint in world frame;
-// `contact` reflects the most recent raycast result. `fz` is the quasi-static
-// normal force in newtons (0 when not in contact). `slip` is the per-wheel
-// slip angle in radians as of the most recent step (front wheels include the
-// steering angle δ; rear wheels do not).
+// the per-wheel slip angle, and in R7 with suspension compression.
+// `position` is the wheel hardpoint in world frame; `contact` reflects the
+// most recent raycast result. `fz` is the normal force at this wheel in
+// newtons (0 when not in contact); R4–R6 derived this quasi-statically, R7
+// derives it from the spring + damper. `slip` is the per-wheel slip angle
+// in radians as of the most recent step (front wheels include the steering
+// angle δ; rear wheels do not). `compression` (R7) is the per-wheel spring
+// compression in meters as of the most recent step (0 if uncompressed).
 export interface WheelState {
   readonly position: { readonly x: number; readonly y: number; readonly z: number };
   readonly contact: boolean;
   readonly contactDistance: number;
   readonly fz: number;
   readonly slip: number;
+  readonly compression: number;
 }
 
 export interface FourWheelVehicleState extends BicycleVehicleState {
@@ -79,6 +83,7 @@ const NEUTRAL_WHEEL_STATE: WheelState = Object.freeze({
   contactDistance: 0,
   fz: 0,
   slip: 0,
+  compression: 0,
 });
 
 export const NEUTRAL_FOUR_WHEEL_STATE: FourWheelVehicleState = Object.freeze({
