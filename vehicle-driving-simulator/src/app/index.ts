@@ -2,7 +2,12 @@ import { type InputSource, KeyboardInputSource } from '../input/index.js';
 import { addTerrainCollider, createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
 import { ControlsOverlay, createScene, FpsCounter, type SceneHandle } from '../render/index.js';
 import { FixedStepLoop, SimClock } from '../sim/index.js';
-import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
+import {
+  attachCsvDownload,
+  Recorder,
+  serializeRecording,
+  TelemetryBuffer,
+} from '../telemetry/index.js';
 import { Heightmap } from '../terrain/index.js';
 import { FourWheelVehicle, type VehicleModel } from '../vehicle/index.js';
 
@@ -16,6 +21,7 @@ export interface AppHandle {
   readonly scene: SceneHandle;
   readonly physics: PhysicsWorld;
   readonly telemetry: TelemetryBuffer;
+  readonly recorder: Recorder;
   readonly input: InputSource;
   readonly heightmap: Heightmap;
   readonly vehicle: VehicleModel;
@@ -28,6 +34,7 @@ export interface BootstrapOptions {
   readonly mount: HTMLElement;
   readonly fpsElement: HTMLElement;
   readonly controlsElement?: HTMLElement;
+  readonly recElement?: HTMLElement;
 }
 
 export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
@@ -49,6 +56,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
   const fps = new FpsCounter(opts.fpsElement);
   const controlsOverlay = opts.controlsElement ? new ControlsOverlay(opts.controlsElement) : null;
   const telemetry = new TelemetryBuffer();
+  const recorder = new Recorder({ rung: 'R7', vehicle: 'FourWheelVehicle' });
   const input = new KeyboardInputSource();
   const vehicle = new FourWheelVehicle({ world: physics.world, terrain: heightmap });
   const clock = new SimClock();
@@ -61,6 +69,46 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
   }
 
   let lastRenderMs = performance.now();
+
+  // R8: 'R' key toggles recording. On stop, downloads JSON of the recorded
+  // run — parallel to R0's 'T' key for CSV download. Prevents auto-repeat
+  // by ignoring `event.repeat`.
+  const setRecIndicator = (active: boolean): void => {
+    if (!opts.recElement) return;
+    if (active) {
+      opts.recElement.classList.add('active');
+      opts.recElement.textContent = 'REC ●';
+    } else {
+      opts.recElement.classList.remove('active');
+      opts.recElement.textContent = 'REC ⚪ (R to start)';
+    }
+  };
+
+  const onRecKey = (event: KeyboardEvent): void => {
+    if (event.repeat) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.toLowerCase() !== 'r') return;
+    if (recorder.isRunning()) {
+      const finalStep = { dt: clock.dt, step: clock.step, time: clock.time };
+      const recording = recorder.stop(finalStep, vehicle.state);
+      const blob = new Blob([serializeRecording(recording)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setRecIndicator(false);
+    } else {
+      const v = vehicle.state;
+      recorder.start({ x: v.x, z: v.z, heading: v.heading });
+      setRecIndicator(true);
+    }
+  };
+  window.addEventListener('keydown', onRecKey);
+  setRecIndicator(false);
 
   const loop = new FixedStepLoop({
     clock,
@@ -93,6 +141,11 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
         c_rl: w.rl.compression,
         c_rr: w.rr.compression,
       });
+      // R8: feed the recorder when running. Lives alongside the CSV
+      // telemetry; both subscribe to the same onStep.
+      if (recorder.isRunning()) {
+        recorder.observe(s, control, v);
+      }
     },
     onRender: () => {
       const nowMs = performance.now();
@@ -127,6 +180,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
     scene,
     physics,
     telemetry,
+    recorder,
     input,
     heightmap,
     vehicle,
@@ -135,6 +189,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
     dispose: () => {
       loop.stop();
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('keydown', onRecKey);
       downloadHandle.detach();
       input.dispose?.();
       scene.dispose();

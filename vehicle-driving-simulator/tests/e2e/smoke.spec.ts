@@ -56,3 +56,44 @@ test('vehicle moves more than 0.5 m when W is held for 2 seconds', async ({ page
   const dz = Math.abs(after.z - before.z);
   expect(dx + dz).toBeGreaterThan(0.5);
 });
+
+test('pressing R toggles recording and the indicator reflects state', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => window.__app !== undefined, undefined, { timeout: 10_000 });
+
+  // Initially not recording.
+  await expect
+    .poll(async () => await page.evaluate(() => Boolean(window.__app?.recorder.isRunning())), {
+      timeout: 5_000,
+    })
+    .toBe(false);
+
+  // Click canvas for focus, then R to start.
+  await page.locator('canvas').click();
+  await page.keyboard.press('r');
+
+  await expect
+    .poll(async () => await page.evaluate(() => Boolean(window.__app?.recorder.isRunning())), {
+      timeout: 5_000,
+    })
+    .toBe(true);
+
+  // Record overlay should now have the active class.
+  const recClass = await page.locator('#rec').getAttribute('class');
+  expect(recClass ?? '').toContain('active');
+
+  // Drive briefly so the recorder accumulates events / checkpoints.
+  await page.keyboard.down('w');
+  await page.waitForTimeout(500);
+  await page.keyboard.up('w');
+
+  // Stop recording (we don't assert on the download here — Playwright's
+  // download API is sensitive; checking the recorder transition is enough).
+  await page.keyboard.press('r');
+
+  await expect
+    .poll(async () => await page.evaluate(() => Boolean(window.__app?.recorder.isRunning())), {
+      timeout: 5_000,
+    })
+    .toBe(false);
+});

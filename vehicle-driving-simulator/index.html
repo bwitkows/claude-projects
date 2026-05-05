@@ -66,11 +66,28 @@
         background: transparent;
         border-color: transparent;
       }
+      #rec {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        padding: 4px 8px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #888;
+        font-size: 12px;
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 10;
+      }
+      #rec.active {
+        color: #ff5544;
+        background: rgba(120, 0, 0, 0.55);
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="fps">FPS: 0</div>
+    <div id="rec">REC ⚪ (R to start)</div>
     <div id="controls">
       <div class="key row1-spacer"></div>
       <div class="key" data-key="w">W</div>
