@@ -1,0 +1,1789 @@
+diff --git a/vehicle-driving-simulator/fixtures/r7-golden.json b/vehicle-driving-simulator/fixtures/r7-golden.json
+new file mode 100644
+index 0000000..d1fe63c
+--- /dev/null
++++ b/vehicle-driving-simulator/fixtures/r7-golden.json
+@@ -0,0 +1,834 @@
++{
++  "version": 1,
++  "rung": "R7",
++  "recordedAt": "2026-05-05T15:57:51.512Z",
++  "lockfileSha256": "",
++  "deps": {},
++  "initial": {
++    "vehicle": "FourWheelVehicle",
++    "x": 0,
++    "z": 0,
++    "heading": 0
++  },
++  "events": [
++    {
++      "t": 0,
++      "state": {
++        "throttle": 1,
++        "brake": 0,
++        "steer": 0
++      }
++    },
++    {
++      "t": 1,
++      "state": {
++        "throttle": 1,
++        "brake": 0,
++        "steer": 0.5
++      }
++    },
++    {
++      "t": 2,
++      "state": {
++        "throttle": 1,
++        "brake": 0,
++        "steer": -0.5
++      }
++    },
++    {
++      "t": 3,
++      "state": {
++        "throttle": 0,
++        "brake": 1,
++        "steer": 0
++      }
++    },
++    {
++      "t": 4,
++      "state": {
++        "throttle": 0,
++        "brake": 0,
++        "steer": 0
++      }
++    }
++  ],
++  "checkpoints": [
++    {
++      "step": 0,
++      "time": 0,
++      "state": {
++        "x": 0,
++        "z": 0,
++        "heading": 0,
++        "speed": 0,
++        "vx": 0,
++        "vy": 0,
++        "yawRate": 0,
++        "slipF": 0,
++        "slipR": 0
++      },
++      "wheels": {
++        "fl": {
++          "fz": 0,
++          "slip": 0,
++          "compression": 0
++        },
++        "fr": {
++          "fz": 0,
++          "slip": 0,
++          "compression": 0
++        },
++        "rl": {
++          "fz": 0,
++          "slip": 0,
++          "compression": 0
++        },
++        "rr": {
++          "fz": 0,
++          "slip": 0,
++          "compression": 0
++        }
++      }
++    },
++    {
++      "step": 60,
++      "time": 0.25,
++      "state": {
++        "x": -0.000027884398150490597,
++        "z": 0.18465383350849152,
++        "heading": -0.00009304159037402378,
++        "speed": 1.4565935557710787,
++        "vx": 1.4565935398384169,
++        "vy": -0.00021544100115286334,
++        "yawRate": -0.0008091157069429755,
++        "slipF": -0.0008078458354684208,
++        "slipR": 0.0006241657040243534
++      },
++      "wheels": {
++        "fl": {
++          "fz": 2838.94419670105,
++          "slip": -0.0008081795404872447,
++          "compression": 0.033428311347961426
++        },
++        "fr": {
++          "fz": 3415.621519088745,
++          "slip": -0.0008075121304495969,
++          "compression": 0.05286133289337158
++        },
++        "rl": {
++          "fz": 4935.8415603637695,
++          "slip": 0.000624423534485798,
++          "compression": 0.06041669845581055
++        },
++        "rr": {
++          "fz": 3761.4893913269043,
++          "slip": 0.000623907873562909,
++          "compression": 0.05567288398742676
++        }
++      }
++    },
++    {
++      "step": 120,
++      "time": 0.5,
++      "state": {
++        "x": -0.0002708676038309932,
++        "z": 0.7226972579956055,
++        "heading": -0.00046542674791009276,
++        "speed": 2.8283198866982118,
++        "vx": 2.8283198446010465,
++        "vy": -0.00048798411594032777,
++        "yawRate": -0.0019771112129092216,
++        "slipF": -0.0010108853009370012,
++        "slipR": 0.0008025743833736974
++      },
++      "wheels": {
++        "fl": {
++          "fz": 2698.497772216797,
++          "slip": -0.0010114141081996335,
++          "compression": 0.037082672119140625
++        },
++        "fr": {
++          "fz": 3414.236307144165,
++          "slip": -0.001010356493674369,
++          "compression": 0.04866445064544678
++        },
++        "rl": {
++          "fz": 4896.862506866455,
++          "slip": 0.0008029942205888799,
++          "compression": 0.06820178031921387
++        },
++        "rr": {
++          "fz": 3829.234838485718,
++          "slip": 0.0008021545461585149,
++          "compression": 0.053988099098205566
++        }
++      }
++    },
++    {
++      "step": 180,
++      "time": 0.75,
++      "state": {
++        "x": -0.0010578357614576817,
++        "z": 1.593540906906128,
++        "heading": -0.0010998907822537022,
++        "speed": 4.120124280551927,
++        "vx": 4.120124271506117,
++        "vy": -0.00027301964051809104,
++        "yawRate": -0.003600706346333027,
++        "slipF": -0.001112752241636398,
++        "slipR": 0.001156643593598038
++      },
++      "wheels": {
++        "fl": {
++          "fz": 2695.155143737793,
++          "slip": -0.0011134806858347863,
++          "compression": 0.039560794830322266
++        },
++        "fr": {
++          "fz": 3474.510908126831,
++          "slip": -0.0011120237974380097,
++          "compression": 0.049938321113586426
++        },
++        "rl": {
++          "fz": 4525.520801544189,
++          "slip": 0.0011574007704680403,
++          "compression": 0.06671023368835449
++        },
++        "rr": {
++          "fz": 3327.2862434387207,
++          "slip": 0.0011558864167280356,
++          "compression": 0.05098223686218262
++        }
++      }
++    },
++    {
++      "step": 240,
++      "time": 1,
++      "state": {
++        "x": -0.003051349427551031,
++        "z": 2.777791976928711,
++        "heading": -0.002063909252307921,
++        "speed": 5.336668945611675,
++        "vx": 5.33666893952858,
++        "vy": -0.00025480762352893434,
++        "yawRate": -0.004915949888527393,
++        "slipF": -0.0011525303405302413,
++        "slipR": 0.0012231455258613134
++      },
++      "wheels": {
++        "fl": {
++          "fz": 3215.7444953918457,
++          "slip": -0.001153320158634837,
++          "compression": 0.03870081901550293
++        },
++        "fr": {
++          "fz": 4052.727222442627,
++          "slip": -0.0011517405224256458,
++          "compression": 0.048401594161987305
++        },
++        "rl": {
++          "fz": 4728.213548660278,
++          "slip": 0.0012239837357885179,
++          "compression": 0.06881701946258545
++        },
++        "rr": {
++          "fz": 3702.5105953216553,
++          "slip": 0.0012223073159341091,
++          "compression": 0.05238211154937744
++        }
++      }
++    },
++    {
++      "step": 300,
++      "time": 1.25,
++      "state": {
++        "x": 0.13156385719776154,
++        "z": 4.221933364868164,
++        "heading": 0.07549699105922104,
++        "speed": 6.30308229186657,
++        "vx": 6.275262189618764,
++        "vy": 0.591549515749143,
++        "yawRate": 0.5086008906364441,
++        "slipF": -0.07329689793711248,
++        "slipR": -0.018942985475143857
++      },
++      "wheels": {
++        "fl": {
++          "fz": 4741.1322593688965,
++          "slip": -0.08441588025462268,
++          "compression": 0.05668282508850098
++        },
++        "fr": {
++          "fz": 3232.7771186828613,
++          "slip": -0.062177915619602286,
++          "compression": 0.03932833671569824
++        },
++        "rl": {
++          "fz": 5900.0396728515625,
++          "slip": -0.017800227323347764,
++          "compression": 0.08104515075683594
++        },
++        "rr": {
++          "fz": 2518.923282623291,
++          "slip": -0.020085743626939954,
++          "compression": 0.03694510459899902
++        }
++      }
++    },
++    {
++      "step": 360,
++      "time": 1.5,
++      "state": {
++        "x": 0.5375140309333801,
++        "z": 5.87423849105835,
++        "heading": 0.22112097108974063,
++        "speed": 7.307622861729529,
++        "vx": 7.279045481073404,
++        "vy": 0.6456382684885678,
++        "yawRate": 0.6231560111045837,
++        "slipF": -0.07183396737117195,
++        "slipR": -0.031095072445085806
++      },
++      "wheels": {
++        "fl": {
++          "fz": 4364.699125289917,
++          "slip": -0.08375918612759711,
++          "compression": 0.06097137928009033
++        },
++        "fr": {
++          "fz": 2337.8777503967285,
++          "slip": -0.05990874861474679,
++          "compression": 0.03679060935974121
++        },
++        "rl": {
++          "fz": 6256.309747695923,
++          "slip": -0.029098770516153907,
++          "compression": 0.08599984645843506
++        },
++        "rr": {
++          "fz": 2368.673086166382,
++          "slip": -0.033091374374017705,
++          "compression": 0.03506433963775635
++        }
++      }
++    },
++    {
++      "step": 420,
++      "time": 1.75,
++      "state": {
++        "x": 1.2694734334945679,
++        "z": 7.6745710372924805,
++        "heading": 0.3850995660771787,
++        "speed": 8.238395188493985,
++        "vx": 8.214145443052232,
++        "vy": 0.631640659065833,
++        "yawRate": 0.6810809969902039,
++        "slipF": -0.08645074704753379,
++        "slipR": -0.03918650079923053
++      },
++      "wheels": {
++        "fl": {
++          "fz": 5371.301174163818,
++          "slip": -0.0971545745440984,
++          "compression": 0.06992363929748535
++        },
++        "fr": {
++          "fz": 1564.1844272613525,
++          "slip": -0.07574691955096918,
++          "compression": 0.029604315757751465
++        },
++        "rl": {
++          "fz": 6103.391647338867,
++          "slip": -0.036750036774644404,
++          "compression": 0.08905506134033203
++        },
++        "rr": {
++          "fz": 2636.101245880127,
++          "slip": -0.041622964823816645,
++          "compression": 0.034981489181518555
++        }
++      }
++    },
++    {
++      "step": 480,
++      "time": 2,
++      "state": {
++        "x": 2.3910915851593018,
++        "z": 9.527422904968262,
++        "heading": 0.5595366654533301,
++        "speed": 9.092636356511939,
++        "vx": 9.07371141769646,
++        "vy": 0.5863420675063447,
++        "yawRate": 0.7000619769096375,
++        "slipF": -0.10520672966956097,
++        "slipR": -0.043335464711061936
++      },
++      "wheels": {
++        "fl": {
++          "fz": 5730.17954826355,
++          "slip": -0.11414062893514951,
++          "compression": 0.07590878009796143
++        },
++        "fr": {
++          "fz": 1102.5631427764893,
++          "slip": -0.09627283040397244,
++          "compression": 0.022858500480651855
++        },
++        "rl": {
++          "fz": 6825.883388519287,
++          "slip": -0.040828586404597335,
++          "compression": 0.09443497657775879
++        },
++        "rr": {
++          "fz": 2096.1523056030273,
++          "slip": -0.04584234301752654,
++          "compression": 0.03699541091918945
++        }
++      }
++    },
++    {
++      "step": 540,
++      "time": 2.25,
++      "state": {
++        "x": 3.7162954807281494,
++        "z": 11.478169441223145,
++        "heading": 0.5953004925974972,
++        "speed": 9.787830291230586,
++        "vx": 9.782781682123458,
++        "vy": -0.314331623990884,
++        "yawRate": -0.26816022396087646,
++        "slipF": 0.1985838797858849,
++        "slipR": 0.0054199991328908355
++      },
++      "wheels": {
++        "fl": {
++          "fz": 1907.9303741455078,
++          "slip": 0.19732696535669333,
++          "compression": 0.041029930114746094
++        },
++        "fr": {
++          "fz": 3460.695743560791,
++          "slip": 0.19984079421507647,
++          "compression": 0.04076552391052246
++        },
++        "rl": {
++          "fz": 3894.9131965637207,
++          "slip": 0.005527710440884286,
++          "compression": 0.06605982780456543
++        },
++        "rr": {
++          "fz": 5040.047168731689,
++          "slip": 0.005312287824897386,
++          "compression": 0.0640265941619873
++        }
++      }
++    },
++    {
++      "step": 600,
++      "time": 2.5,
++      "state": {
++        "x": 4.952685832977295,
++        "z": 13.69251537322998,
++        "heading": 0.4837380648466293,
++        "speed": 10.507569271170034,
++        "vx": 10.502513246348222,
++        "vy": -0.32592560303985696,
++        "yawRate": -0.5551894903182983,
++        "slipF": 0.1674023745030769,
++        "slipR": 0.04256824720784182
++      },
++      "wheels": {
++        "fl": {
++          "fz": 1716.7389392852783,
++          "slip": 0.16367910553517795,
++          "compression": 0.02689540386199951
++        },
++        "fr": {
++          "fz": 2983.5379123687744,
++          "slip": 0.17112564347097586,
++          "compression": 0.047914862632751465
++        },
++        "rl": {
++          "fz": 2839.7679328918457,
++          "slip": 0.044251680823447756,
++          "compression": 0.04852175712585449
++        },
++        "rr": {
++          "fz": 5264.567136764526,
++          "slip": 0.04088481359223588,
++          "compression": 0.07282936573028564
++        }
++      }
++    },
++    {
++      "step": 660,
++      "time": 2.75,
++      "state": {
++        "x": 5.981805801391602,
++        "z": 16.20098114013672,
++        "heading": 0.33863205096059923,
++        "speed": 11.182232941458777,
++        "vx": 11.181439823704347,
++        "vy": -0.13318042620567727,
++        "yawRate": -0.5989497900009155,
++        "slipF": 0.1856999152672837,
++        "slipR": 0.06282897837485052
++      },
++      "wheels": {
++        "fl": {
++          "fz": 2286.766767501831,
++          "slip": 0.18264941488454317,
++          "compression": 0.026018261909484863
++        },
++        "fr": {
++          "fz": 3348.1597900390625,
++          "slip": 0.1887504156500242,
++          "compression": 0.046539306640625
++        },
++        "rl": {
++          "fz": 1935.800313949585,
++          "slip": 0.06534403953124898,
++          "compression": 0.03457796573638916
++        },
++        "rr": {
++          "fz": 5371.391773223877,
++          "slip": 0.06031391721845204,
++          "compression": 0.07494807243347168
++        }
++      }
++    },
++    {
++      "step": 720,
++      "time": 3,
++      "state": {
++        "x": 6.723191738128662,
++        "z": 18.97428321838379,
++        "heading": 0.1910019274848673,
++        "speed": 11.781464756700363,
++        "vx": 11.781337190592849,
++        "vy": 0.05482531282659897,
++        "yawRate": -0.5746911764144897,
++        "slipF": 0.20806656408842447,
++        "slipR": 0.07307183630448134
++      },
++      "wheels": {
++        "fl": {
++          "fz": 2044.377326965332,
++          "slip": 0.20609427892660437,
++          "compression": 0.026507854461669922
++        },
++        "fr": {
++          "fz": 4019.5751190185547,
++          "slip": 0.21003884925024457,
++          "compression": 0.048254966735839844
++        },
++        "rl": {
++          "fz": 1754.8561096191406,
++          "slip": 0.07573966565440873,
++          "compression": 0.025968551635742188
++        },
++        "rr": {
++          "fz": 5936.779975891113,
++          "slip": 0.07040400695455395,
++          "compression": 0.07646512985229492
++        }
++      }
++    },
++    {
++      "step": 780,
++      "time": 3.25,
++      "state": {
++        "x": 7.189963340759277,
++        "z": 21.417451858520508,
++        "heading": 0.09492133324488941,
++        "speed": 8.15884232680142,
++        "vx": 8.140426383257124,
++        "vy": 0.5478744494660812,
++        "yawRate": -0.3121373653411865,
++        "slipF": 0.021396799175619995,
++        "slipR": 0.12053958745621131
++      },
++      "wheels": {
++        "fl": {
++          "fz": 6113.392114639282,
++          "slip": 0.022011640707423983,
++          "compression": 0.07716119289398193
++        },
++        "fr": {
++          "fz": 6639.612913131714,
++          "slip": 0.020781957643816008,
++          "compression": 0.07860100269317627
++        },
++        "rl": {
++          "fz": 291.7182445526123,
++          "slip": 0.12397093700321249,
++          "compression": 0.006488919258117676
++        },
++        "rr": {
++          "fz": 3163.7442111968994,
++          "slip": 0.11710823790921013,
++          "compression": 0.04274404048919678
++        }
++      }
++    },
++    {
++      "step": 840,
++      "time": 3.5,
++      "state": {
++        "x": 7.386373043060303,
++        "z": 23.0096378326416,
++        "heading": 0.034169636847220464,
++        "speed": 4.733128804821194,
++        "vx": 4.729450354196963,
++        "vy": 0.1865680310619373,
++        "yawRate": -0.1300887167453766,
++        "slipF": 0.006803196474053014,
++        "slipR": 0.07877415314837223
++      },
++      "wheels": {
++        "fl": {
++          "fz": 6265.5651569366455,
++          "slip": 0.006944691801465156,
++          "compression": 0.08525741100311279
++        },
++        "fr": {
++          "fz": 6302.855014801025,
++          "slip": 0.006661701146640872,
++          "compression": 0.08991408348083496
++        },
++        "rl": {
++          "fz": 0,
++          "slip": 0.0804058101425243,
++          "compression": 0.005740642547607422
++        },
++        "rr": {
++          "fz": 2982.3601245880127,
++          "slip": 0.07714249615422016,
++          "compression": 0.04368007183074951
++        }
++      }
++    },
++    {
++      "step": 900,
++      "time": 3.75,
++      "state": {
++        "x": 7.422631740570068,
++        "z": 23.78677749633789,
++        "heading": 0.023138606198902956,
++        "speed": 1.5395013706357377,
++        "vx": 1.539500927019229,
++        "vy": 0.0011687156409963678,
++        "yawRate": -0.0005686294753104448,
++        "slipF": 0.0003170413122330733,
++        "slipR": 0.0016190108057765802
++      },
++      "wheels": {
++        "fl": {
++          "fz": 6814.788579940796,
++          "slip": 0.0003171603829472898,
++          "compression": 0.09236776828765869
++        },
++        "fr": {
++          "fz": 5719.622373580933,
++          "slip": 0.0003169222415188567,
++          "compression": 0.0841284990310669
++        },
++        "rl": {
++          "fz": 1347.663402557373,
++          "slip": 0.0016196188541336162,
++          "compression": 0.014785051345825195
++        },
++        "rr": {
++          "fz": 2383.58736038208,
++          "slip": 0.0016184027574195443,
++          "compression": 0.03784823417663574
++        }
++      }
++    },
++    {
++      "step": 960,
++      "time": 4,
++      "state": {
++        "x": 7.424922466278076,
++        "z": 23.88562774658203,
++        "heading": 0.023547191745690945,
++        "speed": 0.05000005764437916,
++        "vx": 0.05000005753992767,
++        "vy": 0.0000032318973913040856,
++        "yawRate": -0.00017563044093549252,
++        "slipF": 0.0005385566126970313,
++        "slipR": -0.0006524554081608785
++      },
++      "wheels": {
++        "fl": {
++          "fz": 4420.225620269775,
++          "slip": 0.0005385566126970313,
++          "compression": 0.08106017112731934
++        },
++        "fr": {
++          "fz": 3242.7728176116943,
++          "slip": 0.0005385566126970313,
++          "compression": 0.06578028202056885
++        },
++        "rl": {
++          "fz": 2899.956703186035,
++          "slip": -0.0006524554081608785,
++          "compression": 0.02919912338256836
++        },
++        "rr": {
++          "fz": 3912.7159118652344,
++          "slip": -0.0006524554081608785,
++          "compression": 0.04517936706542969
++        }
++      }
++    },
++    {
++      "step": 1020,
++      "time": 4.25,
++      "state": {
++        "x": 7.425208568572998,
++        "z": 23.897754669189453,
++        "heading": 0.023602331360231574,
++        "speed": 0.04708687495354675,
++        "vx": 0.04708687495341332,
++        "vy": -1.1209318868119281e-7,
++        "yawRate": 0.000003638836460595485,
++        "slipF": 0.000007558140720075454,
++        "slipR": -0.000009312424657269313
++      },
++      "wheels": {
++        "fl": {
++          "fz": 4615.604877471924,
++          "slip": 0.000007558140720075454,
++          "compression": 0.06760478019714355
++        },
++        "fr": {
++          "fz": 3454.0629386901855,
++          "slip": 0.000007558140720075454,
++          "compression": 0.05121159553527832
++        },
++        "rl": {
++          "fz": 2786.376476287842,
++          "slip": -0.000009312424657269313,
++          "compression": 0.03837895393371582
++        },
++        "rr": {
++          "fz": 3807.556629180908,
++          "slip": -0.000009312424657269313,
++          "compression": 0.05320429801940918
++        }
++      }
++    },
++    {
++      "step": 1080,
++      "time": 4.5,
++      "state": {
++        "x": 7.4254374504089355,
++        "z": 23.909168243408203,
++        "heading": 0.02360300993571996,
++        "speed": 0.044343405663445065,
++        "vx": 0.04434340566343213,
++        "vy": -3.38714986533855e-8,
++        "yawRate": -5.662218427460175e-8,
++        "slipF": 0.0000024253137543639946,
++        "slipR": -0.000002898724074891622
++      },
++      "wheels": {
++        "fl": {
++          "fz": 4654.859304428101,
++          "slip": 0.0000024253137543639946,
++          "compression": 0.06663286685943604
++        },
++        "fr": {
++          "fz": 3497.6208209991455,
++          "slip": 0.0000024253137543639946,
++          "compression": 0.05010497570037842
++        },
++        "rl": {
++          "fz": 2766.9811248779297,
++          "slip": -0.000002898724074891622,
++          "compression": 0.03939342498779297
++        },
++        "rr": {
++          "fz": 3790.285587310791,
++          "slip": -0.000002898724074891622,
++          "compression": 0.05404067039489746
++        }
++      }
++    },
++    {
++      "step": 1140,
++      "time": 4.75,
++      "state": {
++        "x": 7.425666332244873,
++        "z": 23.919923782348633,
++        "heading": 0.02359640698337432,
++        "speed": 0.04175981723030229,
++        "vx": 0.041759817230301956,
++        "vy": -5.287103597160017e-9,
++        "yawRate": 2.748902261373587e-7,
++        "slipF": 6.523598694091239e-7,
++        "slipR": -7.748157605328408e-7
++      },
++      "wheels": {
++        "fl": {
++          "fz": 4658.29610824585,
++          "slip": 6.523598694091239e-7,
++          "compression": 0.06655526161193848
++        },
++        "fr": {
++          "fz": 3501.9218921661377,
++          "slip": 6.523598694091239e-7,
++          "compression": 0.05003154277801514
++        },
++        "rl": {
++          "fz": 2767.1146392822266,
++          "slip": -7.748157605328408e-7,
++          "compression": 0.03950977325439453
++        },
++        "rr": {
++          "fz": 3788.943290710449,
++          "slip": -7.748157605328408e-7,
++          "compression": 0.05411958694458008
++        }
++      }
++    }
++  ],
++  "final": {
++    "step": 1200,
++    "time": 5,
++    "state": {
++      "x": 7.4258952140808105,
++      "z": 23.930082321166992,
++      "heading": 0.02358930074176499,
++      "speed": 0.039326742649517195,
++      "vx": 0.039326742649515654,
++      "vy": 1.1006146913121462e-8,
++      "yawRate": -4.373220008346834e-7,
++      "slipF": -5.075119337573892e-7,
++      "slipR": 5.744803980619963e-7
++    },
++    "wheels": {
++      "fl": {
++        "fz": 4656.127691268921,
++        "slip": -5.075119337573892e-7,
++        "compression": 0.066536545753479
++      },
++      "fr": {
++        "fz": 3503.105640411377,
++        "slip": -5.075119337573892e-7,
++        "compression": 0.05003619194030762
++      },
++      "rl": {
++        "fz": 2767.4496173858643,
++        "slip": 5.744803980619963e-7,
++        "compression": 0.03952682018280029
++      },
++      "rr": {
++        "fz": 3788.421154022217,
++        "slip": 5.744803980619963e-7,
++        "compression": 0.05412030220031738
++      }
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/vehicle-driving-simulator/index.html b/vehicle-driving-simulator/index.html
+index 96c5970..008f362 100644
+--- a/vehicle-driving-simulator/index.html
++++ b/vehicle-driving-simulator/index.html
+@@ -66,11 +66,28 @@
+         background: transparent;
+         border-color: transparent;
+       }
++      #rec {
++        position: fixed;
++        top: 8px;
++        left: 8px;
++        padding: 4px 8px;
++        background: rgba(0, 0, 0, 0.55);
++        color: #888;
++        font-size: 12px;
++        border-radius: 4px;
++        pointer-events: none;
++        z-index: 10;
++      }
++      #rec.active {
++        color: #ff5544;
++        background: rgba(120, 0, 0, 0.55);
++      }
+     </style>
+   </head>
+   <body>
+     <div id="app"></div>
+     <div id="fps">FPS: 0</div>
++    <div id="rec">REC ⚪ (R to start)</div>
+     <div id="controls">
+       <div class="key row1-spacer"></div>
+       <div class="key" data-key="w">W</div>
+diff --git a/vehicle-driving-simulator/src/app/index.ts b/vehicle-driving-simulator/src/app/index.ts
+index 663a355..8445b52 100644
+--- a/vehicle-driving-simulator/src/app/index.ts
++++ b/vehicle-driving-simulator/src/app/index.ts
+@@ -2,7 +2,12 @@ import { type InputSource, KeyboardInputSource } from '../input/index.js';
+ import { addTerrainCollider, createPhysicsWorld, type PhysicsWorld } from '../physics/index.js';
+ import { ControlsOverlay, createScene, FpsCounter, type SceneHandle } from '../render/index.js';
+ import { FixedStepLoop, SimClock } from '../sim/index.js';
+-import { attachCsvDownload, TelemetryBuffer } from '../telemetry/index.js';
++import {
++  attachCsvDownload,
++  Recorder,
++  serializeRecording,
++  TelemetryBuffer,
++} from '../telemetry/index.js';
+ import { Heightmap } from '../terrain/index.js';
+ import { FourWheelVehicle, type VehicleModel } from '../vehicle/index.js';
+ 
+@@ -16,6 +21,7 @@ export interface AppHandle {
+   readonly scene: SceneHandle;
+   readonly physics: PhysicsWorld;
+   readonly telemetry: TelemetryBuffer;
++  readonly recorder: Recorder;
+   readonly input: InputSource;
+   readonly heightmap: Heightmap;
+   readonly vehicle: VehicleModel;
+@@ -28,6 +34,7 @@ export interface BootstrapOptions {
+   readonly mount: HTMLElement;
+   readonly fpsElement: HTMLElement;
+   readonly controlsElement?: HTMLElement;
++  readonly recElement?: HTMLElement;
+ }
+ 
+ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+@@ -49,6 +56,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+   const fps = new FpsCounter(opts.fpsElement);
+   const controlsOverlay = opts.controlsElement ? new ControlsOverlay(opts.controlsElement) : null;
+   const telemetry = new TelemetryBuffer();
++  const recorder = new Recorder({ rung: 'R7', vehicle: 'FourWheelVehicle' });
+   const input = new KeyboardInputSource();
+   const vehicle = new FourWheelVehicle({ world: physics.world, terrain: heightmap });
+   const clock = new SimClock();
+@@ -62,6 +70,46 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+ 
+   let lastRenderMs = performance.now();
+ 
++  // R8: 'R' key toggles recording. On stop, downloads JSON of the recorded
++  // run — parallel to R0's 'T' key for CSV download. Prevents auto-repeat
++  // by ignoring `event.repeat`.
++  const setRecIndicator = (active: boolean): void => {
++    if (!opts.recElement) return;
++    if (active) {
++      opts.recElement.classList.add('active');
++      opts.recElement.textContent = 'REC ●';
++    } else {
++      opts.recElement.classList.remove('active');
++      opts.recElement.textContent = 'REC ⚪ (R to start)';
++    }
++  };
++
++  const onRecKey = (event: KeyboardEvent): void => {
++    if (event.repeat) return;
++    if (event.ctrlKey || event.metaKey || event.altKey) return;
++    if (event.key.toLowerCase() !== 'r') return;
++    if (recorder.isRunning()) {
++      const finalStep = { dt: clock.dt, step: clock.step, time: clock.time };
++      const recording = recorder.stop(finalStep, vehicle.state);
++      const blob = new Blob([serializeRecording(recording)], { type: 'application/json' });
++      const url = URL.createObjectURL(blob);
++      const a = document.createElement('a');
++      a.href = url;
++      a.download = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
++      document.body.appendChild(a);
++      a.click();
++      document.body.removeChild(a);
++      URL.revokeObjectURL(url);
++      setRecIndicator(false);
++    } else {
++      const v = vehicle.state;
++      recorder.start({ x: v.x, z: v.z, heading: v.heading });
++      setRecIndicator(true);
++    }
++  };
++  window.addEventListener('keydown', onRecKey);
++  setRecIndicator(false);
++
+   const loop = new FixedStepLoop({
+     clock,
+     onStep: (s) => {
+@@ -93,6 +141,11 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+         c_rl: w.rl.compression,
+         c_rr: w.rr.compression,
+       });
++      // R8: feed the recorder when running. Lives alongside the CSV
++      // telemetry; both subscribe to the same onStep.
++      if (recorder.isRunning()) {
++        recorder.observe(s, control, v);
++      }
+     },
+     onRender: () => {
+       const nowMs = performance.now();
+@@ -127,6 +180,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+     scene,
+     physics,
+     telemetry,
++    recorder,
+     input,
+     heightmap,
+     vehicle,
+@@ -135,6 +189,7 @@ export async function bootstrap(opts: BootstrapOptions): Promise<AppHandle> {
+     dispose: () => {
+       loop.stop();
+       window.removeEventListener('resize', onResize);
++      window.removeEventListener('keydown', onRecKey);
+       downloadHandle.detach();
+       input.dispose?.();
+       scene.dispose();
+diff --git a/vehicle-driving-simulator/src/main.ts b/vehicle-driving-simulator/src/main.ts
+index be1d96f..04cb702 100644
+--- a/vehicle-driving-simulator/src/main.ts
++++ b/vehicle-driving-simulator/src/main.ts
+@@ -14,7 +14,13 @@ async function main(): Promise<void> {
+     throw new Error('Required mount points (#app, #fps) missing from index.html');
+   }
+   const controlsEl = document.getElementById('controls') ?? undefined;
+-  const app = await bootstrap({ mount, fpsElement: fpsEl, controlsElement: controlsEl });
++  const recEl = document.getElementById('rec') ?? undefined;
++  const app = await bootstrap({
++    mount,
++    fpsElement: fpsEl,
++    controlsElement: controlsEl,
++    recElement: recEl,
++  });
+   window.__app = app;
+   app.start();
+ }
+diff --git a/vehicle-driving-simulator/src/replay/format.ts b/vehicle-driving-simulator/src/replay/format.ts
+new file mode 100644
+index 0000000..dd207f3
+--- /dev/null
++++ b/vehicle-driving-simulator/src/replay/format.ts
+@@ -0,0 +1,68 @@
++import type { ControlState } from '../input/types.js';
++
++export const RECORDING_VERSION = 1;
++
++// Body-frame state captured at a checkpoint. Mirrors `BicycleVehicleState`'s
++// numeric fields. `slipF, slipR` are per-axle averages (R5 semantics).
++export interface CheckpointBody {
++  readonly x: number;
++  readonly z: number;
++  readonly heading: number;
++  readonly speed: number;
++  readonly vx: number;
++  readonly vy: number;
++  readonly yawRate: number;
++  readonly slipF: number;
++  readonly slipR: number;
++}
++
++// Per-wheel state captured at a checkpoint. R6 added `slip`; R7 added
++// `compression`. Position is intentionally omitted — it's derivable from
++// body pose + body-frame hardpoint offsets and adds noise to the file.
++export interface CheckpointWheel {
++  readonly fz: number;
++  readonly slip: number;
++  readonly compression: number;
++}
++
++export interface CheckpointWheels {
++  readonly fl: CheckpointWheel;
++  readonly fr: CheckpointWheel;
++  readonly rl: CheckpointWheel;
++  readonly rr: CheckpointWheel;
++}
++
++export interface Checkpoint {
++  readonly step: number;
++  readonly time: number;
++  readonly state: CheckpointBody;
++  readonly wheels: CheckpointWheels;
++}
++
++export interface RecordingInitial {
++  readonly vehicle: 'FourWheelVehicle' | 'BicycleVehicle' | 'KinematicVehicle';
++  readonly params?: Readonly<Record<string, unknown>>;
++  readonly x: number;
++  readonly z: number;
++  readonly heading: number;
++}
++
++export interface RecordingEvent {
++  readonly t: number;
++  readonly state: ControlState;
++}
++
++// The on-disk JSON representation of a deterministic vehicle session. The
++// format is purposely shallow and self-contained so it round-trips through
++// `JSON.parse`/`JSON.stringify` without information loss.
++export interface RunRecording {
++  readonly version: typeof RECORDING_VERSION;
++  readonly rung: string;
++  readonly recordedAt: string;
++  readonly lockfileSha256: string;
++  readonly deps: Readonly<Record<string, string>>;
++  readonly initial: RecordingInitial;
++  readonly events: readonly RecordingEvent[];
++  readonly checkpoints: readonly Checkpoint[];
++  readonly final: Checkpoint;
++}
+diff --git a/vehicle-driving-simulator/src/replay/index.ts b/vehicle-driving-simulator/src/replay/index.ts
+new file mode 100644
+index 0000000..72e6b4f
+--- /dev/null
++++ b/vehicle-driving-simulator/src/replay/index.ts
+@@ -0,0 +1,11 @@
++export {
++  type Checkpoint,
++  type CheckpointBody,
++  type CheckpointWheel,
++  type CheckpointWheels,
++  RECORDING_VERSION,
++  type RecordingEvent,
++  type RecordingInitial,
++  type RunRecording,
++} from './format.js';
++export { type ReplayResult, replayRun, type VehicleFactory } from './player.js';
+diff --git a/vehicle-driving-simulator/src/replay/player.test.ts b/vehicle-driving-simulator/src/replay/player.test.ts
+new file mode 100644
+index 0000000..ba7fb77
+--- /dev/null
++++ b/vehicle-driving-simulator/src/replay/player.test.ts
+@@ -0,0 +1,130 @@
++import { describe, expect, it } from 'vitest';
++import { addTerrainCollider, createPhysicsWorld, ensureRapierReady } from '../physics/index.js';
++import { SIM_DT } from '../sim/clock.js';
++import { Recorder, serializeRecording } from '../telemetry/index.js';
++import { Heightmap } from '../terrain/index.js';
++import { FourWheelVehicle } from '../vehicle/four-wheel.js';
++import type { RunRecording } from './format.js';
++import { replayRun } from './player.js';
++
++interface RecordedRun {
++  readonly recording: RunRecording;
++  readonly totalSteps: number;
++}
++
++const SCRIPT = [
++  { fromStep: 0, control: { throttle: 1, brake: 0, steer: 0 } },
++  { fromStep: 60, control: { throttle: 1, brake: 0, steer: 0.5 } },
++  { fromStep: 120, control: { throttle: 1, brake: 0, steer: -0.5 } },
++  { fromStep: 180, control: { throttle: 0, brake: 1, steer: 0 } },
++];
++
++async function runAndRecord(): Promise<RecordedRun> {
++  await ensureRapierReady();
++  const phys = await createPhysicsWorld({ fixedDt: SIM_DT, includeGroundPlane: false });
++  const terrain = new Heightmap();
++  addTerrainCollider(phys.world, terrain);
++  phys.step();
++  const vehicle = new FourWheelVehicle({ world: phys.world, terrain });
++  const recorder = new Recorder({
++    rung: 'R7',
++    vehicle: 'FourWheelVehicle',
++    checkpointInterval: 30,
++  });
++  recorder.start({ x: 0, z: 0, heading: 0 });
++  const totalSteps = 240;
++  for (let i = 0; i < totalSteps; i += 1) {
++    const t = i * SIM_DT;
++    let phase = SCRIPT[0]!;
++    for (const p of SCRIPT) {
++      if (p.fromStep <= i) phase = p;
++    }
++    const ctrl = phase.control;
++    recorder.observe({ dt: SIM_DT, step: i, time: t }, ctrl, vehicle.state);
++    vehicle.step(SIM_DT, ctrl);
++    phys.step();
++  }
++  const finalStep = { dt: SIM_DT, step: totalSteps, time: totalSteps * SIM_DT };
++  const recording = recorder.stop(finalStep, vehicle.state);
++  phys.free();
++  return { recording, totalSteps };
++}
++
++describe('Recorder', () => {
++  it('debounces — repeated identical control states emit one event', async () => {
++    const { recording } = await runAndRecord();
++    // Script has 4 distinct control states. Recorder should emit at most 4
++    // events (start state + each transition). The first observe always
++    // emits since lastEmittedState starts null.
++    expect(recording.events.length).toBeLessThanOrEqual(SCRIPT.length);
++    expect(recording.events.length).toBeGreaterThanOrEqual(SCRIPT.length);
++  });
++
++  it('emits checkpoints at the configured interval (every 30 steps over 240)', async () => {
++    const { recording } = await runAndRecord();
++    // Expected: steps 0, 30, 60, 90, 120, 150, 180, 210 (≥8 checkpoints).
++    expect(recording.checkpoints.length).toBeGreaterThanOrEqual(8);
++    // Final checkpoint is separate.
++    expect(recording.final.step).toBe(240);
++  });
++
++  it('serialized output round-trips through JSON without numeric loss', async () => {
++    const { recording } = await runAndRecord();
++    const json = serializeRecording(recording);
++    const parsed = JSON.parse(json) as RunRecording;
++    expect(parsed.version).toBe(recording.version);
++    expect(parsed.events.length).toBe(recording.events.length);
++    expect(parsed.checkpoints.length).toBe(recording.checkpoints.length);
++    // Numeric round-trip: every checkpoint's body field must equal exactly.
++    for (let i = 0; i < recording.checkpoints.length; i += 1) {
++      const a = recording.checkpoints[i]!;
++      const b = parsed.checkpoints[i]!;
++      expect(b.state.x).toBe(a.state.x);
++      expect(b.state.heading).toBe(a.state.heading);
++      expect(b.wheels.fl.fz).toBe(a.wheels.fl.fz);
++      expect(b.wheels.rr.compression).toBe(a.wheels.rr.compression);
++    }
++  });
++});
++
++describe('replayRun', () => {
++  it('reproduces every checkpoint within default tolerances', async () => {
++    const { recording } = await runAndRecord();
++    const result = await replayRun(recording, ({ world, terrain }) => {
++      return new FourWheelVehicle({ world, terrain });
++    });
++    expect(result.ok).toBe(true);
++    for (const cp of result.checkpointResults) {
++      expect(cp.bodyOk).toBe(true);
++      expect(cp.wheelOk).toBe(true);
++    }
++    // All checkpoints covered (8 interval + 1 final = 9, possibly more).
++    expect(result.checkpointResults.length).toBeGreaterThanOrEqual(9);
++  });
++
++  it('detects perturbation — a vehicle with different fDrive diverges from the recording', async () => {
++    const { recording } = await runAndRecord();
++    // Perturb the drive force by 10% — replay should diverge meaningfully
++    // from the original recording's checkpoints.
++    const result = await replayRun(recording, ({ world, terrain }) => {
++      return new FourWheelVehicle({ world, terrain, params: { fDrive: 9000 * 1.1 } });
++    });
++    expect(result.ok).toBe(false);
++    // Final divergence should be substantial (not just float noise) given
++    // the 10% force perturbation accumulated over 240 sim steps.
++    expect(result.finalDiff.maxBodyDiff).toBeGreaterThan(0.01);
++  });
++
++  it('replays with custom tolerances — looser tolerance overrides default', async () => {
++    const { recording } = await runAndRecord();
++    const result = await replayRun(
++      recording,
++      ({ world, terrain }) => new FourWheelVehicle({ world, terrain }),
++      { tolerances: { body: 1, wheel: 1 } },
++    );
++    // With huge tolerances, replay always passes.
++    expect(result.ok).toBe(true);
++    expect(result.tolerances.body).toBe(1);
++    expect(result.tolerances.wheel).toBe(1);
++  });
++});
+diff --git a/vehicle-driving-simulator/src/replay/player.ts b/vehicle-driving-simulator/src/replay/player.ts
+new file mode 100644
+index 0000000..41bb598
+--- /dev/null
++++ b/vehicle-driving-simulator/src/replay/player.ts
+@@ -0,0 +1,163 @@
++import type RAPIER from '@dimforge/rapier3d-compat';
++import { SyntheticInputSource } from '../input/synthetic.js';
++import { addTerrainCollider, createPhysicsWorld, ensureRapierReady } from '../physics/index.js';
++import { SIM_DT } from '../sim/clock.js';
++import { Heightmap } from '../terrain/index.js';
++import type { FourWheelVehicleState, VehicleModel } from '../vehicle/types.js';
++import type { Checkpoint, RunRecording } from './format.js';
++
++export type VehicleFactory = (deps: { world: RAPIER.World; terrain: Heightmap }) => VehicleModel;
++
++export interface ReplayTolerances {
++  readonly body: number;
++  readonly wheel: number;
++}
++
++export const DEFAULT_TOLERANCES: ReplayTolerances = Object.freeze({
++  body: 1e-7,
++  wheel: 1e-5,
++});
++
++export interface CheckpointResult {
++  readonly step: number;
++  readonly maxBodyDiff: number;
++  readonly maxWheelDiff: number;
++  readonly bodyOk: boolean;
++  readonly wheelOk: boolean;
++  readonly worstBodyField: string;
++  readonly worstWheelField: string;
++}
++
++export interface ReplayResult {
++  readonly ok: boolean;
++  readonly checkpointResults: readonly CheckpointResult[];
++  readonly finalDiff: { readonly maxBodyDiff: number; readonly maxWheelDiff: number };
++  readonly tolerances: ReplayTolerances;
++}
++
++const BODY_FIELDS = [
++  'x',
++  'z',
++  'heading',
++  'speed',
++  'vx',
++  'vy',
++  'yawRate',
++  'slipF',
++  'slipR',
++] as const;
++
++const WHEEL_FIELDS = ['fz', 'slip', 'compression'] as const;
++const WHEEL_IDS = ['fl', 'fr', 'rl', 'rr'] as const;
++
++function compareCheckpoint(
++  state: FourWheelVehicleState,
++  cp: Checkpoint,
++): {
++  maxBodyDiff: number;
++  maxWheelDiff: number;
++  worstBodyField: string;
++  worstWheelField: string;
++} {
++  let maxBody = 0;
++  let worstBody = '';
++  for (const f of BODY_FIELDS) {
++    const d = Math.abs(state[f] - cp.state[f]);
++    if (d > maxBody) {
++      maxBody = d;
++      worstBody = f;
++    }
++  }
++  let maxWheel = 0;
++  let worstWheel = '';
++  for (const wid of WHEEL_IDS) {
++    for (const f of WHEEL_FIELDS) {
++      const d = Math.abs(state.wheels[wid][f] - cp.wheels[wid][f]);
++      if (d > maxWheel) {
++        maxWheel = d;
++        worstWheel = `${wid}.${f}`;
++      }
++    }
++  }
++  return {
++    maxBodyDiff: maxBody,
++    maxWheelDiff: maxWheel,
++    worstBodyField: worstBody,
++    worstWheelField: worstWheel,
++  };
++}
++
++// Drives a fresh vehicle through the recorded events and compares per-step
++// state against the recording's checkpoints. Returns per-checkpoint divergence
++// numbers and an overall pass/fail. The factory pattern lets the caller swap
++// in any VehicleModel implementation; the regression test passes a
++// FourWheelVehicle factory.
++export async function replayRun(
++  recording: RunRecording,
++  factory: VehicleFactory,
++  opts: { tolerances?: Partial<ReplayTolerances> } = {},
++): Promise<ReplayResult> {
++  const tolerances: ReplayTolerances = {
++    body: opts.tolerances?.body ?? DEFAULT_TOLERANCES.body,
++    wheel: opts.tolerances?.wheel ?? DEFAULT_TOLERANCES.wheel,
++  };
++
++  await ensureRapierReady();
++  const phys = await createPhysicsWorld({ fixedDt: SIM_DT, includeGroundPlane: false });
++  const heightmap = new Heightmap();
++  addTerrainCollider(phys.world, heightmap);
++  // Warmup step so Rapier's broad phase indexes the trimesh before raycasts.
++  phys.step();
++
++  const vehicle = factory({ world: phys.world, terrain: heightmap });
++  vehicle.reset({
++    x: recording.initial.x,
++    z: recording.initial.z,
++    heading: recording.initial.heading,
++  });
++
++  const inputSource = new SyntheticInputSource(recording.events);
++  const checkpointMap = new Map<number, Checkpoint>();
++  for (const cp of recording.checkpoints) {
++    checkpointMap.set(cp.step, cp);
++  }
++  checkpointMap.set(recording.final.step, recording.final);
++
++  const checkpointResults: CheckpointResult[] = [];
++  const totalSteps = recording.final.step;
++
++  for (let i = 0; i <= totalSteps; i += 1) {
++    const t = i * SIM_DT;
++    const cp = checkpointMap.get(i);
++    if (cp) {
++      const cmp = compareCheckpoint(vehicle.state as FourWheelVehicleState, cp);
++      checkpointResults.push({
++        step: i,
++        maxBodyDiff: cmp.maxBodyDiff,
++        maxWheelDiff: cmp.maxWheelDiff,
++        worstBodyField: cmp.worstBodyField,
++        worstWheelField: cmp.worstWheelField,
++        bodyOk: cmp.maxBodyDiff <= tolerances.body,
++        wheelOk: cmp.maxWheelDiff <= tolerances.wheel,
++      });
++    }
++    if (i === totalSteps) break;
++    const control = inputSource.read(t);
++    vehicle.step(SIM_DT, control);
++    phys.step();
++  }
++
++  phys.free();
++
++  const ok = checkpointResults.every((r) => r.bodyOk && r.wheelOk);
++  const last = checkpointResults[checkpointResults.length - 1];
++  return {
++    ok,
++    checkpointResults,
++    finalDiff: {
++      maxBodyDiff: last?.maxBodyDiff ?? 0,
++      maxWheelDiff: last?.maxWheelDiff ?? 0,
++    },
++    tolerances,
++  };
++}
+diff --git a/vehicle-driving-simulator/src/replay/regression.test.ts b/vehicle-driving-simulator/src/replay/regression.test.ts
+new file mode 100644
+index 0000000..e1187c9
+--- /dev/null
++++ b/vehicle-driving-simulator/src/replay/regression.test.ts
+@@ -0,0 +1,105 @@
++// Golden-fixture regression test. Loads `fixtures/r7-golden.json` and
++// replays it against the current `FourWheelVehicle`. Failure prints
++// per-checkpoint divergence numbers so a regression is debuggable.
++//
++// To regenerate the fixture (e.g., after intentional R7 dynamics changes),
++// set the env var `GENERATE_GOLDEN=1` before running tests:
++//   PowerShell:  $env:GENERATE_GOLDEN='1'; npm test
++//   bash:        GENERATE_GOLDEN=1 npm test
++// The test then writes the freshly recorded run to `fixtures/r7-golden.json`
++// and asserts replay still passes (sanity).
++
++import * as fs from 'node:fs';
++import * as path from 'node:path';
++import { describe, expect, it } from 'vitest';
++import { addTerrainCollider, createPhysicsWorld, ensureRapierReady } from '../physics/index.js';
++import { SIM_DT } from '../sim/clock.js';
++import { Recorder, serializeRecording } from '../telemetry/index.js';
++import { Heightmap } from '../terrain/index.js';
++import { FourWheelVehicle } from '../vehicle/four-wheel.js';
++import type { RunRecording } from './format.js';
++import { replayRun } from './player.js';
++
++const FIXTURE_PATH = path.resolve(process.cwd(), 'fixtures', 'r7-golden.json');
++
++// Five-second deterministic control script: 1 s each of throttle, throttle+
++// steer right, throttle+steer left, brake, neutral. 240 Hz × 5 s = 1200 sim
++// steps total. Checkpoint every 60 steps → ~21 checkpoints.
++const SCRIPT = [
++  { fromStep: 0, control: { throttle: 1, brake: 0, steer: 0 } },
++  { fromStep: 240, control: { throttle: 1, brake: 0, steer: 0.5 } },
++  { fromStep: 480, control: { throttle: 1, brake: 0, steer: -0.5 } },
++  { fromStep: 720, control: { throttle: 0, brake: 1, steer: 0 } },
++  { fromStep: 960, control: { throttle: 0, brake: 0, steer: 0 } },
++];
++const TOTAL_STEPS = 1200;
++
++async function recordGoldenRun(): Promise<RunRecording> {
++  await ensureRapierReady();
++  const phys = await createPhysicsWorld({ fixedDt: SIM_DT, includeGroundPlane: false });
++  const terrain = new Heightmap();
++  addTerrainCollider(phys.world, terrain);
++  phys.step();
++  const vehicle = new FourWheelVehicle({ world: phys.world, terrain });
++  const recorder = new Recorder({
++    rung: 'R7',
++    vehicle: 'FourWheelVehicle',
++    checkpointInterval: 60,
++  });
++  recorder.start({ x: 0, z: 0, heading: 0 });
++  for (let i = 0; i < TOTAL_STEPS; i += 1) {
++    let phase = SCRIPT[0]!;
++    for (const p of SCRIPT) {
++      if (p.fromStep <= i) phase = p;
++    }
++    const step = { dt: SIM_DT, step: i, time: i * SIM_DT };
++    recorder.observe(step, phase.control, vehicle.state);
++    vehicle.step(SIM_DT, phase.control);
++    phys.step();
++  }
++  const finalStep = { dt: SIM_DT, step: TOTAL_STEPS, time: TOTAL_STEPS * SIM_DT };
++  const recording = recorder.stop(finalStep, vehicle.state);
++  phys.free();
++  return recording;
++}
++
++describe('Golden fixture (R7)', () => {
++  it('replays without regression', async () => {
++    if (process.env.GENERATE_GOLDEN === '1') {
++      // Regenerate path. Drives a fresh vehicle, records, writes fixture.
++      const recording = await recordGoldenRun();
++      const dir = path.dirname(FIXTURE_PATH);
++      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
++      fs.writeFileSync(FIXTURE_PATH, serializeRecording(recording), 'utf-8');
++      console.log(`Wrote ${FIXTURE_PATH} (${recording.checkpoints.length} checkpoints)`);
++    }
++
++    if (!fs.existsSync(FIXTURE_PATH)) {
++      throw new Error(
++        `Golden fixture not found at ${FIXTURE_PATH}. Run with GENERATE_GOLDEN=1 to create it.`,
++      );
++    }
++
++    const text = fs.readFileSync(FIXTURE_PATH, 'utf-8');
++    const recording = JSON.parse(text) as RunRecording;
++    expect(recording.version).toBe(1);
++    expect(recording.rung).toBe('R7');
++
++    const result = await replayRun(recording, ({ world, terrain }) => {
++      return new FourWheelVehicle({ world, terrain });
++    });
++
++    if (!result.ok) {
++      console.log('Regression detected. Per-checkpoint divergence:');
++      for (const cp of result.checkpointResults) {
++        if (!cp.bodyOk || !cp.wheelOk) {
++          console.log(
++            `  step ${cp.step}: body ${cp.maxBodyDiff.toExponential(2)} (worst: ${cp.worstBodyField}), wheel ${cp.maxWheelDiff.toExponential(2)} (worst: ${cp.worstWheelField})`,
++          );
++        }
++      }
++    }
++
++    expect(result.ok).toBe(true);
++  });
++});
+diff --git a/vehicle-driving-simulator/src/telemetry/index.ts b/vehicle-driving-simulator/src/telemetry/index.ts
+index 985d8a6..b2791d3 100644
+--- a/vehicle-driving-simulator/src/telemetry/index.ts
++++ b/vehicle-driving-simulator/src/telemetry/index.ts
+@@ -1,4 +1,6 @@
+ export { DEFAULT_CAPACITY, TelemetryBuffer } from './buffer.js';
+ export { exportCsv } from './csv.js';
+ export { attachCsvDownload, type DownloadCsvOptions, type DownloadHandle } from './download.js';
++export { Recorder, type RecorderOptions, recordRun } from './recorder.js';
+ export { BASE_FIELDS, recordFields, type TelemetryRecord } from './schema.js';
++export { serializeRecording } from './serialize.js';
+diff --git a/vehicle-driving-simulator/src/telemetry/recorder.ts b/vehicle-driving-simulator/src/telemetry/recorder.ts
+new file mode 100644
+index 0000000..bfcb1ae
+--- /dev/null
++++ b/vehicle-driving-simulator/src/telemetry/recorder.ts
+@@ -0,0 +1,178 @@
++import type { ControlState } from '../input/types.js';
++import {
++  type Checkpoint,
++  type CheckpointWheels,
++  RECORDING_VERSION,
++  type RecordingEvent,
++  type RecordingInitial,
++  type RunRecording,
++} from '../replay/format.js';
++import type { SimStep } from '../sim/loop.js';
++import type { FourWheelVehicleState } from '../vehicle/types.js';
++
++export interface RecorderOptions {
++  readonly checkpointInterval?: number;
++  readonly rung: string;
++  readonly lockfileSha256?: string;
++  readonly deps?: Readonly<Record<string, string>>;
++  readonly vehicle: RecordingInitial['vehicle'];
++}
++
++const DEFAULT_CHECKPOINT_INTERVAL = 60;
++
++function snapshotCheckpoint(step: SimStep, state: FourWheelVehicleState): Checkpoint {
++  const w = state.wheels;
++  const wheels: CheckpointWheels = {
++    fl: { fz: w.fl.fz, slip: w.fl.slip, compression: w.fl.compression },
++    fr: { fz: w.fr.fz, slip: w.fr.slip, compression: w.fr.compression },
++    rl: { fz: w.rl.fz, slip: w.rl.slip, compression: w.rl.compression },
++    rr: { fz: w.rr.fz, slip: w.rr.slip, compression: w.rr.compression },
++  };
++  return {
++    step: step.step,
++    time: step.time,
++    state: {
++      x: state.x,
++      z: state.z,
++      heading: state.heading,
++      speed: state.speed,
++      vx: state.vx,
++      vy: state.vy,
++      yawRate: state.yawRate,
++      slipF: state.slipF,
++      slipR: state.slipR,
++    },
++    wheels,
++  };
++}
++
++function controlEqual(a: ControlState, b: ControlState): boolean {
++  return a.throttle === b.throttle && a.brake === b.brake && a.steer === b.steer;
++}
++
++// Captures a deterministic vehicle session into a `RunRecording`. Events are
++// debounced (only emitted when ControlState actually changes); checkpoints
++// emit at a regular sim-step interval. Coexists with R0's TelemetryBuffer —
++// both can subscribe to the app's `onStep` independently.
++export class Recorder {
++  private readonly opts: Required<Omit<RecorderOptions, 'lockfileSha256' | 'deps'>> & {
++    readonly lockfileSha256: string;
++    readonly deps: Readonly<Record<string, string>>;
++  };
++  private running = false;
++  private events: RecordingEvent[] = [];
++  private checkpoints: Checkpoint[] = [];
++  private final: Checkpoint | null = null;
++  private lastEmittedState: ControlState | null = null;
++  private initial: RecordingInitial | null = null;
++  private startedAt: string | null = null;
++
++  constructor(opts: RecorderOptions) {
++    this.opts = {
++      checkpointInterval: opts.checkpointInterval ?? DEFAULT_CHECKPOINT_INTERVAL,
++      rung: opts.rung,
++      vehicle: opts.vehicle,
++      lockfileSha256: opts.lockfileSha256 ?? '',
++      deps: opts.deps ?? {},
++    };
++  }
++
++  isRunning(): boolean {
++    return this.running;
++  }
++
++  // Begins recording from the supplied initial pose. Subsequent `observe`
++  // calls accumulate events + checkpoints. Calling `start` again resets.
++  start(initialPose: { x: number; z: number; heading: number }): void {
++    this.running = true;
++    this.events = [];
++    this.checkpoints = [];
++    this.final = null;
++    this.lastEmittedState = null;
++    this.initial = {
++      vehicle: this.opts.vehicle,
++      x: initialPose.x,
++      z: initialPose.z,
++      heading: initialPose.heading,
++    };
++    this.startedAt = new Date().toISOString();
++  }
++
++  // Called from the app's onStep (or a test driver) once per sim step. The
++  // recorder decides whether to emit an event and/or a checkpoint.
++  observe(step: SimStep, input: ControlState, vehicleState: FourWheelVehicleState): void {
++    if (!this.running) return;
++    if (this.lastEmittedState === null || !controlEqual(this.lastEmittedState, input)) {
++      this.events.push({ t: step.time, state: { ...input } });
++      this.lastEmittedState = { ...input };
++    }
++    if (step.step % this.opts.checkpointInterval === 0) {
++      this.checkpoints.push(snapshotCheckpoint(step, vehicleState));
++    }
++  }
++
++  // Stops recording; returns the assembled `RunRecording` ready for serialization.
++  stop(finalStep: SimStep, finalState: FourWheelVehicleState): RunRecording {
++    if (!this.running) {
++      throw new Error('Recorder.stop: not running');
++    }
++    this.final = snapshotCheckpoint(finalStep, finalState);
++    this.running = false;
++    return this.recording();
++  }
++
++  // Returns the current in-memory recording. May be called while running to
++  // peek (the `final` checkpoint is the last full snapshot, possibly stale).
++  recording(): RunRecording {
++    if (this.initial === null) {
++      throw new Error('Recorder.recording: never started');
++    }
++    const finalCp =
++      this.final ??
++      this.checkpoints[this.checkpoints.length - 1] ??
++      ({
++        step: 0,
++        time: 0,
++        state: {
++          x: this.initial.x,
++          z: this.initial.z,
++          heading: this.initial.heading,
++          speed: 0,
++          vx: 0,
++          vy: 0,
++          yawRate: 0,
++          slipF: 0,
++          slipR: 0,
++        },
++        wheels: {
++          fl: { fz: 0, slip: 0, compression: 0 },
++          fr: { fz: 0, slip: 0, compression: 0 },
++          rl: { fz: 0, slip: 0, compression: 0 },
++          rr: { fz: 0, slip: 0, compression: 0 },
++        },
++      } satisfies Checkpoint);
++    return {
++      version: RECORDING_VERSION,
++      rung: this.opts.rung,
++      recordedAt: this.startedAt ?? new Date().toISOString(),
++      lockfileSha256: this.opts.lockfileSha256,
++      deps: this.opts.deps,
++      initial: this.initial,
++      events: [...this.events],
++      checkpoints: [...this.checkpoints],
++      final: finalCp,
++    };
++  }
++
++  // Number of events / checkpoints captured so far — useful for tests.
++  get eventCount(): number {
++    return this.events.length;
++  }
++  get checkpointCount(): number {
++    return this.checkpoints.length;
++  }
++}
++
++export function recordRun(opts: RecorderOptions): Recorder {
++  return new Recorder(opts);
++}
+diff --git a/vehicle-driving-simulator/src/telemetry/serialize.ts b/vehicle-driving-simulator/src/telemetry/serialize.ts
+new file mode 100644
+index 0000000..77f596b
+--- /dev/null
++++ b/vehicle-driving-simulator/src/telemetry/serialize.ts
+@@ -0,0 +1,22 @@
++import type { RunRecording } from '../replay/format.js';
++import type { Recorder } from './recorder.js';
++
++// Returns a JSON string of the recording. Field ordering at the top level is
++// deterministic for human readability (version → metadata → initial →
++// events → checkpoints → final). JSON itself is not order-sensitive; the
++// player relies on field presence, not order.
++export function serializeRecording(recorder: Recorder | RunRecording): string {
++  const recording: RunRecording = 'recording' in recorder ? recorder.recording() : recorder;
++  const ordered: RunRecording = {
++    version: recording.version,
++    rung: recording.rung,
++    recordedAt: recording.recordedAt,
++    lockfileSha256: recording.lockfileSha256,
++    deps: recording.deps,
++    initial: recording.initial,
++    events: recording.events,
++    checkpoints: recording.checkpoints,
++    final: recording.final,
++  };
++  return JSON.stringify(ordered, null, 2);
++}
+diff --git a/vehicle-driving-simulator/tests/e2e/smoke.spec.ts b/vehicle-driving-simulator/tests/e2e/smoke.spec.ts
+index 2cc8628..db01b7e 100644
+--- a/vehicle-driving-simulator/tests/e2e/smoke.spec.ts
++++ b/vehicle-driving-simulator/tests/e2e/smoke.spec.ts
+@@ -56,3 +56,44 @@ test('vehicle moves more than 0.5 m when W is held for 2 seconds', async ({ page
+   const dz = Math.abs(after.z - before.z);
+   expect(dx + dz).toBeGreaterThan(0.5);
+ });
++
++test('pressing R toggles recording and the indicator reflects state', async ({ page }) => {
++  await page.goto('/');
++  await page.waitForFunction(() => window.__app !== undefined, undefined, { timeout: 10_000 });
++
++  // Initially not recording.
++  await expect
++    .poll(async () => await page.evaluate(() => Boolean(window.__app?.recorder.isRunning())), {
++      timeout: 5_000,
++    })
++    .toBe(false);
++
++  // Click canvas for focus, then R to start.
++  await page.locator('canvas').click();
++  await page.keyboard.press('r');
++
++  await expect
++    .poll(async () => await page.evaluate(() => Boolean(window.__app?.recorder.isRunning())), {
++      timeout: 5_000,
++    })
++    .toBe(true);
++
++  // Record overlay should now have the active class.
++  const recClass = await page.locator('#rec').getAttribute('class');
++  expect(recClass ?? '').toContain('active');
++
++  // Drive briefly so the recorder accumulates events / checkpoints.
++  await page.keyboard.down('w');
++  await page.waitForTimeout(500);
++  await page.keyboard.up('w');
++
++  // Stop recording (we don't assert on the download here — Playwright's
++  // download API is sensitive; checking the recorder transition is enough).
++  await page.keyboard.press('r');
++
++  await expect
++    .poll(async () => await page.evaluate(() => Boolean(window.__app?.recorder.isRunning())), {
++      timeout: 5_000,
++    })
++    .toBe(false);
++});

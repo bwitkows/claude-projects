@@ -1,0 +1,57 @@
+{
+  "rung": "R8",
+  "change": "telemetry-and-replay",
+  "tool": "claude-code",
+  "model": "claude-opus-4-7[1m]",
+  "attemptId": "2026-05-05-a",
+  "startedAt": "2026-05-05T15:30:00Z",
+  "endedAt": "2026-05-05T16:10:00Z",
+  "wallClockSeconds": 2400,
+  "humanInterventions": 0,
+  "tokens": {
+    "total": 110000,
+    "kind": "estimated",
+    "basis": "Pure infrastructure rung — no vehicle dynamics changes. Single self-correction round on a perturbation test (Rapier was so deterministic that 1e-30 tolerance still passed; rewrote the test to use an actual fDrive perturbation). One TypeScript fix (replaced findLast with manual scan; ES2023 lib not enabled). At ~10k tokens/% (R0+R1 baseline rate), R8 ≈ 110k. Session pre-R8 was at ~96%; post-R8 likely near limit."
+  },
+  "checks": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "test": "pass",
+    "e2e": "pass",
+    "build": "pass",
+    "rungSpecific": "pass"
+  },
+  "outcome": "passed",
+  "linesAdded": 1634,
+  "linesRemoved": 2,
+  "filesTouched": 13,
+  "baselineCommit": "a321d5a",
+  "baselineTag": "r8-baseline",
+  "resultCommit": "a0f60c7",
+  "resultTag": "r8-complete",
+  "lockfileSha256": "3A286289BBD94944A567647037D76ED53D7EC1B43F74C5B19D7693D972005C7D",
+  "tests": {
+    "unitFiles": 17,
+    "unitTests": 107,
+    "e2eTests": 3
+  },
+  "host": {
+    "platform": "win32",
+    "osVersion": "Windows 11 Home 10.0.26200",
+    "node": "v24.15.0",
+    "npm": "11.12.1"
+  },
+  "deps": {
+    "vite": "8.0.10",
+    "vitest": "4.1.5",
+    "typescript": "5.9.3",
+    "three": "0.184.0",
+    "@dimforge/rapier3d-compat": "0.19.3",
+    "@biomejs/biome": "2.4.14",
+    "@playwright/test": "1.59.1"
+  },
+  "caveats": [
+    "Same agent wrote and implemented the R8 spec; not a clean cross-tool comparison.",
+    "Rapier is so deterministic across two independent worlds in the same process that the default 1e-7/1e-5 tolerances are luxury — actual replay divergence is exactly 0 (bit-identical). The tolerances are still meaningful for cross-build/cross-machine replay."
+  ]
+}
